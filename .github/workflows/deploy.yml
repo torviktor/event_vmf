@@ -1,0 +1,22 @@
+name: Deploy Reunion
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.REUNION_HOST }}
+          username: root
+          key: ${{ secrets.REUNION_SSH_KEY }}
+          script: |
+            cd /opt/reunion
+            git pull origin main
+            docker compose down
+            docker compose up -d --build
+            docker system prune -f

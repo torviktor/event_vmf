@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+  reunion-db:
+    image: postgres:15
+    container_name: reunion-db
+    environment:
+      POSTGRES_DB: reunion
+      POSTGRES_USER: reunion
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-reunion_secret_2025}
+    volumes:
+      - reunion_pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - reunion-net
+
+  reunion-backend:
+    build: ./backend
+    container_name: reunion-backend
+    environment:
+      DATABASE_URL: postgresql://reunion:${DB_PASSWORD:-reunion_secret_2025}@reunion-db:5432/reunion
+      SECRET_KEY: ${SECRET_KEY:-change_me_in_production}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+    depends_on:
+      - reunion-db
+    restart: unless-stopped
+    networks:
+      - reunion-net
+
+  reunion-frontend:
+    build: ./frontend
+    container_name: reunion-frontend
+    restart: unless-stopped
+    networks:
+      - reunion-net
+
+  reunion-nginx:
+    image: nginx:alpine
+    container_name: reunion-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - reunion-backend
+      - reunion-frontend
+    restart: unless-stopped
+    networks:
+      - reunion-net
+
+volumes:
+  reunion_pg_data:
+
+networks:
+  reunion-net:
+    driver: bridge
