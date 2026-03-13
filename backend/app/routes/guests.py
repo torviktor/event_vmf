@@ -96,7 +96,7 @@ def guest_stats(db: Session = Depends(get_db)):
     total_adults = sum(g.adults_count for g in guests)
     total_children = sum(len(g.children) for g in guests)
     return {
-        "total_guests": len(guests),
+        "total_guests": total_adults + total_children,
         "total_adults": total_adults,
         "total_children": total_children,
         "institute": sum(1 for g in guests if g.will_attend_institute),
