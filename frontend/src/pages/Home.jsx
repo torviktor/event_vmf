@@ -14,19 +14,20 @@ export default function Home() {
   return (
     <>
       <div className="hero">
+        <div className="hero-anniversary">
+          <span className="hero-anniversary-number">15</span>
+          <span className="hero-anniversary-text">лет со дня выпуска</span>
+        </div>
         <div className="hero-anchor">⚓</div>
-        <div className="hero-year">25</div>
         <div className="hero-content">
-          <p className="hero-eyebrow">Встреча выпускников · {info.city || '…'}</p>
+          <p className="hero-eyebrow">Встреча выпускников · Санкт-Петербург</p>
           <h1>Снова вместе</h1>
           <div className="hero-divider" />
           <p className="hero-subtitle">
-            {info.welcome_text || 'Приглашаем вас и ваши семьи на встречу выпускников.'}
+            Уважаемые выпускники, сослуживцы! Приглашаем вас на встречу выпускников ВМИРЭ им. А.С. Попова 2011 года.
           </p>
           <Link to="/register">
-            <button className="hero-cta">
-              ✦ Подтвердить участие
-            </button>
+            <button className="hero-cta">Подтвердить участие</button>
           </Link>
         </div>
       </div>
@@ -54,76 +55,86 @@ export default function Home() {
 
       <div className="section">
         <h2 className="section-title">Программа дня</h2>
-        <p className="section-sub">Предварительный план — уточняется</p>
+        <p className="section-sub">27 июня 2026 года, Санкт-Петербург</p>
 
         <div className="program-grid">
           <div className="program-card">
-            <span className="program-card-icon">🏫</span>
+            <span className="program-card-icon">▪</span>
             <div className="program-card-time">{info.institute_time || '10:00 – 13:00'}</div>
             <h3>Институт</h3>
-            <p>Экскурсия по корпусам и плацу. Встреча с преподавателями и руководством кафедр. Дети приветствуются!</p>
+            <p>Экскурсия по корпусам, плацу и музею. Встреча с преподавателями и руководством кафедр. Семьи и дети приветствуются.</p>
           </div>
           <div className="program-card">
-            <span className="program-card-icon">🚶</span>
+            <span className="program-card-icon">▪</span>
             <div className="program-card-time">День</div>
             <h3>Прогулка</h3>
-            <p>Свободное время: набережная, фонтаны, прогулка по городу. Для тех, кто хочет подышать воздухом после встречи.</p>
+            <p>Свободное время: набережная Невы, фонтаны, прогулка по городу. Для тех, кто хочет продолжить общение перед вечером.</p>
           </div>
           <div className="program-card">
-            <span className="program-card-icon">🥂</span>
+            <span className="program-card-icon">▪</span>
             <div className="program-card-time">{info.restaurant_time || '18:00 – 22:00'}</div>
-            <h3>{info.restaurant_name || 'Ресторан'}</h3>
-            <p>Торжественный ужин с ведущим, тостами и фотографиями. Уголок с играми для детей.</p>
+            <h3>{info.restaurant_name || 'Торжественный ужин'}</h3>
+            <p>Ужин с ведущим, тостами и общей фотографией. Для семей с детьми предусмотрен детский уголок в ресторане.</p>
           </div>
         </div>
 
-        <div style={{marginTop: '2.5rem', padding: '1.5rem 2rem', background: 'var(--navy)', borderRadius: '10px', color: 'var(--white)'}}>
-          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'1rem'}}>
+        <div style={{marginTop:'2.5rem', padding:'1.8rem 2.2rem', background:'var(--navy)', borderRadius:'10px', color:'var(--white)'}}>
+          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'1.2rem'}}>
             <div>
-              <div style={{fontSize:'0.75rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.4rem'}}>Дата мероприятия</div>
-              <div style={{fontFamily:'Playfair Display, serif', fontSize:'1.5rem'}}>{info.event_date || 'Голосуем за дату!'}</div>
+              <div style={{fontSize:'0.78rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.4rem'}}>Дата мероприятия</div>
+              <div style={{fontFamily:'Playfair Display, serif', fontSize:'1.6rem'}}>27 июня 2026 года</div>
             </div>
             <div>
-              <div style={{fontSize:'0.75rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.4rem'}}>Бюджет на человека</div>
-              <div style={{fontFamily:'Playfair Display, serif', fontSize:'1.5rem'}}>{info.budget_per_person || '10 000 – 15 000 ₽'}</div>
+              <div style={{fontSize:'0.78rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.4rem'}}>Бюджет на человека</div>
+              <div style={{fontFamily:'Playfair Display, serif', fontSize:'1.6rem'}}>{info.budget_per_person || '10 000 – 15 000 ₽'}</div>
             </div>
             <div style={{display:'flex', gap:'0.8rem', flexWrap:'wrap'}}>
               <Link to="/register"><button className="btn btn-gold">Записаться</button></Link>
-              <Link to="/vote"><button className="btn btn-outline" style={{color:'var(--gold)', borderColor:'var(--gold)'}}>Голосовать</button></Link>
+              <Link to="/guests"><button className="btn btn-outline" style={{color:'var(--gold)', borderColor:'var(--gold)'}}>Список участников</button></Link>
             </div>
           </div>
         </div>
 
         <div style={{marginTop:'2.5rem'}}>
-          <h2 className="section-title">Что взять с собой</h2>
-          <p className="section-sub">Советы для комфортного дня</p>
+          <h2 className="section-title">Полезная информация</h2>
           <div className="program-grid">
             <div className="program-card">
-              <span className="program-card-icon">📄</span>
-              <h3>Документы</h3>
-              <p>Уточните заранее правила пропускного режима в институт — возможно, понадобится паспорт.</p>
+              <span className="program-card-icon">▪</span>
+              <h3>Пропуск в институт</h3>
+              <p>Проход организован заранее. Паспорт обязателен — без него пропуск не выдаётся. Оргкомитет заблаговременно согласует список участников с руководством.</p>
             </div>
             <div className="program-card">
-              <span className="program-card-icon">📸</span>
-              <h3>Старые фото</h3>
-              <p>Принесите фотографии со времён учёбы — сделаем общую ретро-галерею на вечере.</p>
+              <span className="program-card-icon">▪</span>
+              <h3>Фотоальбом встречи</h3>
+              <p>Общий архив фотографий со встречи — на Яндекс.Диске. Для получения доступа оставьте свою почту при регистрации или запросите доступ по кнопке ниже.</p>
+              <div style={{marginTop:'1rem', display:'flex', gap:'0.7rem', flexWrap:'wrap'}}>
+                <a href="https://disk.yandex.ru/d/RZxLk3bCQzz62g" target="_blank" rel="noopener noreferrer">
+                  <button className="btn btn-primary btn-sm">Открыть альбом</button>
+                </a>
+                <Link to="/register">
+                  <button className="btn btn-outline btn-sm">Запросить доступ</button>
+                </Link>
+              </div>
             </div>
             <div className="program-card">
-              <span className="program-card-icon">👶</span>
-              <h3>Для детей</h3>
-              <p>На вечернем мероприятии будет детский уголок. Возьмите любимую игрушку на случай усталости.</p>
+              <span className="program-card-icon">▪</span>
+              <h3>Семьи с детьми</h3>
+              <p>Ресторан выбирается с учётом наличия детского уголка. Просим при регистрации указать количество и возраст детей — это важно для планирования.</p>
             </div>
           </div>
         </div>
 
         {info.organizer_name && (
-          <div style={{marginTop:'2rem', padding:'1.2rem 1.5rem', background:'var(--white)', borderRadius:'8px', border:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'1rem'}}>
+          <div style={{marginTop:'2rem', padding:'1.3rem 1.8rem', background:'var(--white)', borderRadius:'8px', border:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'1rem'}}>
             <div>
-              <div style={{fontSize:'0.75rem', letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.2rem'}}>Оргкомитет</div>
-              <strong>{info.organizer_name}</strong>
-              {info.organizer_phone && <span style={{marginLeft:'1rem', color:'var(--text-muted)'}}>{info.organizer_phone}</span>}
+              <div style={{fontSize:'0.78rem', letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.2rem'}}>Оргкомитет</div>
+              <strong style={{fontSize:'1.05rem'}}>{info.organizer_name}</strong>
+              {info.organizer_phone && <span style={{marginLeft:'1.2rem', color:'var(--text-muted)'}}>{info.organizer_phone}</span>}
             </div>
-            <Link to="/register"><button className="btn btn-primary btn-sm">Зарегистрироваться →</button></Link>
+            <div style={{display:'flex', gap:'0.8rem'}}>
+              <Link to="/register"><button className="btn btn-primary btn-sm">Зарегистрироваться</button></Link>
+              <Link to="/checklist"><button className="btn btn-outline btn-sm">Оргкомитет</button></Link>
+            </div>
           </div>
         )}
       </div>

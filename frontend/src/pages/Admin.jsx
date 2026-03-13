@@ -7,17 +7,14 @@ export default function Admin() {
   const [loginError, setLoginError] = useState('')
   const [tab, setTab] = useState('guests')
 
-  // Guests state
   const [guests, setGuests] = useState([])
   const [stats, setStats] = useState(null)
   const [guestsLoading, setGuestsLoading] = useState(false)
 
-  // Info state
   const [info, setInfo] = useState({})
   const [infoEdits, setInfoEdits] = useState({})
   const [infoSaving, setInfoSaving] = useState('')
 
-  // Vote state
   const [pollTitle, setPollTitle] = useState('')
   const [pollOptions, setPollOptions] = useState('14 июня (суббота)\n21 июня (суббота)\n28 июня (суббота)')
   const [pollMsg, setPollMsg] = useState('')
@@ -28,68 +25,52 @@ export default function Admin() {
       localStorage.setItem('admin_token', res.token)
       setToken(res.token)
       setLoginError('')
-    } catch {
-      setLoginError('Неверный пароль')
-    }
+    } catch { setLoginError('Неверный пароль') }
   }
 
-  function logout() {
-    localStorage.removeItem('admin_token')
-    setToken('')
-  }
+  function logout() { localStorage.removeItem('admin_token'); setToken('') }
 
   async function loadGuests() {
     setGuestsLoading(true)
     try {
       const [g, s] = await Promise.all([api.getGuests(), api.getStats()])
-      setGuests(g)
-      setStats(s)
+      setGuests(g); setStats(s)
     } catch {}
     setGuestsLoading(false)
   }
 
   async function loadInfo() {
-    try {
-      const i = await api.getInfo()
-      setInfo(i)
-      setInfoEdits(i)
-    } catch {}
+    try { const i = await api.getInfo(); setInfo(i); setInfoEdits(i) } catch {}
   }
 
-  useEffect(() => {
-    if (token) { loadGuests(); loadInfo() }
-  }, [token])
+  useEffect(() => { if (token) { loadGuests(); loadInfo() } }, [token])
 
-  async function toggleConfirm(id) {
-    await api.confirmGuest(id)
-    loadGuests()
-  }
-
+  async function toggleConfirm(id) { await api.confirmGuest(id); loadGuests() }
   async function deleteGuest(id) {
     if (!confirm('Удалить участника?')) return
-    await api.deleteGuest(id)
-    loadGuests()
+    await api.deleteGuest(id); loadGuests()
   }
 
   async function saveInfo(key) {
     setInfoSaving(key)
-    try {
-      await api.setInfo(key, infoEdits[key] ?? info[key])
-      await loadInfo()
-    } catch {}
+    try { await api.setInfo(key, infoEdits[key] ?? info[key]); await loadInfo() } catch {}
     setInfoSaving('')
   }
 
   async function createPoll() {
     const options = pollOptions.split('\n').map(s => s.trim()).filter(Boolean)
     if (!pollTitle || options.length < 2) { setPollMsg('Введите заголовок и минимум 2 варианта'); return }
-    try {
-      await api.createPoll({ title: pollTitle, options })
-      setPollMsg('✓ Опрос создан')
-    } catch (e) {
-      setPollMsg('Ошибка: ' + e.message)
-    }
+    try { await api.createPoll({ title: pollTitle, options }); setPollMsg('✓ Опрос создан') }
+    catch (e) { setPollMsg('Ошибка: ' + e.message) }
   }
+
+  // Извлечь почты из поля message
+  const photoEmails = guests
+    .map(g => {
+      const match = g.message && g.message.match(/Почта для фото: ([^\s|]+)/)
+      return match ? { name: g.name, email: match[1] } : null
+    })
+    .filter(Boolean)
 
   const INFO_FIELDS = [
     { key: 'event_date', label: 'Дата мероприятия' },
@@ -103,7 +84,6 @@ export default function Admin() {
     { key: 'welcome_text', label: 'Приветственный текст', textarea: true },
   ]
 
-  // Login screen
   if (!token) {
     return (
       <div className="section" style={{maxWidth:'420px'}}>
@@ -112,13 +92,9 @@ export default function Admin() {
           {loginError && <div className="alert alert-error">{loginError}</div>}
           <div className="form-group" style={{marginBottom:'1rem'}}>
             <label>Пароль администратора</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
+            <input type="password" placeholder="••••••••" value={password}
               onChange={e => setPassword(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && login()}
-            />
+              onKeyDown={e => e.key === 'Enter' && login()} />
           </div>
           <button className="btn btn-primary" onClick={login}>Войти</button>
         </div>
@@ -133,39 +109,22 @@ export default function Admin() {
         <button className="btn btn-outline btn-sm" onClick={logout}>Выйти</button>
       </div>
 
-      {/* Stats */}
       {stats && (
         <div style={{display:'flex', gap:'0.8rem', marginBottom:'1.5rem', flexWrap:'wrap'}}>
-          {[
-            ['Участников', stats.total_guests],
-            ['Взрослых', stats.total_adults],
-            ['Детей', stats.total_children],
-            ['На экскурсию', stats.institute],
-            ['В ресторан', stats.restaurant],
-          ].map(([label, val]) => (
-            <div key={label} style={{background:'var(--navy)', color:'var(--white)', padding:'0.8rem 1.4rem', borderRadius:'8px', textAlign:'center'}}>
-              <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.6rem', color:'var(--gold)', lineHeight:1}}>{val}</div>
+          {[['Участников', stats.total_guests], ['Взрослых', stats.total_adults], ['Детей', stats.total_children], ['На экскурсию', stats.institute], ['В ресторан', stats.restaurant]].map(([label, val]) => (
+            <div key={label} style={{background:'var(--navy)', color:'var(--white)', padding:'0.9rem 1.5rem', borderRadius:'8px', textAlign:'center'}}>
+              <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.7rem', color:'var(--gold)', lineHeight:1}}>{val}</div>
               <div style={{fontSize:'0.72rem', textTransform:'uppercase', letterSpacing:'0.1em', marginTop:'0.2rem', opacity:0.6}}>{label}</div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Tabs */}
-      <div style={{display:'flex', gap:'0.5rem', marginBottom:'1.5rem', borderBottom:'2px solid var(--border)', paddingBottom:'0'}}>
-        {[['guests','👥 Участники'], ['info','⚙️ Настройки'], ['poll','🗳️ Голосование']].map(([t, label]) => (
-          <button
-            key={t}
-            className="btn btn-sm"
-            style={{
-              background: tab === t ? 'var(--navy)' : 'transparent',
-              color: tab === t ? 'var(--white)' : 'var(--text-muted)',
-              border: 'none',
-              borderRadius: '6px 6px 0 0',
-              paddingBottom:'0.75rem'
-            }}
-            onClick={() => setTab(t)}
-          >{label}</button>
+      <div style={{display:'flex', gap:'0.5rem', marginBottom:'1.5rem', borderBottom:'2px solid var(--border)'}}>
+        {[['guests','Участники'], ['photos','Доступ к фото'], ['info','Настройки'], ['poll','Голосование']].map(([t, label]) => (
+          <button key={t} className="btn btn-sm"
+            style={{background: tab === t ? 'var(--navy)' : 'transparent', color: tab === t ? 'var(--white)' : 'var(--text-muted)', border:'none', borderRadius:'6px 6px 0 0', paddingBottom:'0.75rem'}}
+            onClick={() => setTab(t)}>{label}</button>
         ))}
       </div>
 
@@ -173,57 +132,39 @@ export default function Admin() {
       {tab === 'guests' && (
         <>
           <div style={{marginBottom:'1rem', display:'flex', justifyContent:'flex-end'}}>
-            <button className="btn btn-gold btn-sm" onClick={loadGuests}>↻ Обновить</button>
+            <button className="btn btn-gold btn-sm" onClick={loadGuests}>Обновить</button>
           </div>
           {guestsLoading ? <div className="spinner" /> : (
             <div className="table-wrap">
               <table>
                 <thead>
                   <tr>
-                    <th>#</th>
-                    <th>ФИО</th>
-                    <th>Телефон</th>
-                    <th>Год / Кафедра</th>
-                    <th>Состав</th>
-                    <th>Программа</th>
-                    <th>Питание</th>
-                    <th>Статус</th>
-                    <th>Действия</th>
+                    <th>#</th><th>ФИО</th><th>Телефон</th><th>Кафедра</th><th>Состав</th><th>Программа</th><th>Статус</th><th>Действия</th>
                   </tr>
                 </thead>
                 <tbody>
                   {guests.length === 0 && (
-                    <tr><td colSpan="9" className="text-center" style={{color:'var(--text-muted)', padding:'2rem'}}>Заявок пока нет</td></tr>
+                    <tr><td colSpan="8" className="text-center" style={{color:'var(--text-muted)', padding:'2rem'}}>Заявок пока нет</td></tr>
                   )}
                   {guests.map((g, i) => (
                     <tr key={g.id}>
-                      <td style={{color:'var(--text-muted)', fontSize:'0.8rem'}}>{i + 1}</td>
+                      <td style={{color:'var(--text-muted)', fontSize:'0.85rem'}}>{i + 1}</td>
                       <td>
-                        <strong>{g.name}</strong>
-                        {g.message && <div style={{fontSize:'0.78rem', color:'var(--text-muted)', marginTop:'0.2rem', fontStyle:'italic'}}>"{g.message}"</div>}
+                        <strong style={{fontSize:'1rem'}}>{g.name}</strong>
+                        {g.message && <div style={{fontSize:'0.82rem', color:'var(--text-muted)', marginTop:'0.2rem', fontStyle:'italic'}}>"{g.message}"</div>}
                       </td>
-                      <td>{g.phone}</td>
+                      <td style={{fontSize:'0.95rem'}}>{g.phone}</td>
+                      <td style={{fontSize:'0.9rem', color:'var(--text-muted)'}}>{g.specialty || '—'}</td>
+                      <td style={{fontSize:'0.9rem'}}>
+                        {g.adults_count} взр.
+                        {g.children.length > 0 && g.children.map((c, ci) => (
+                          <div key={ci} style={{color:'var(--text-muted)', fontSize:'0.82rem'}}>{c.name || `Ребёнок ${ci+1}`}, {c.age} л.</div>
+                        ))}
+                      </td>
                       <td style={{fontSize:'0.85rem'}}>
-                        {g.graduation_year && <div>{g.graduation_year}</div>}
-                        {g.specialty && <div style={{color:'var(--text-muted)'}}>{g.specialty}</div>}
+                        {g.will_attend_institute && <div>Институт</div>}
+                        {g.will_attend_restaurant && <div>Ресторан</div>}
                       </td>
-                      <td style={{fontSize:'0.85rem'}}>
-                        👤 {g.adults_count} взр.
-                        {g.children.length > 0 && (
-                          <div>
-                            {g.children.map((c, ci) => (
-                              <span key={ci} style={{display:'block', color:'var(--text-muted)'}}>
-                                👶 {c.name || `Ребёнок ${ci+1}`}, {c.age} лет
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </td>
-                      <td style={{fontSize:'0.8rem'}}>
-                        {g.will_attend_institute && <div>🏫 Институт</div>}
-                        {g.will_attend_restaurant && <div>🥂 Ресторан</div>}
-                      </td>
-                      <td style={{fontSize:'0.82rem', color:'var(--text-muted)'}}>{g.dietary_notes || '—'}</td>
                       <td>
                         <span className={`badge ${g.is_confirmed ? 'badge-green' : 'badge-gray'}`}>
                           {g.is_confirmed ? '✓ Подтверждён' : 'Ожидает'}
@@ -234,9 +175,7 @@ export default function Admin() {
                           <button className="btn btn-sm btn-gold" onClick={() => toggleConfirm(g.id)}>
                             {g.is_confirmed ? 'Снять' : 'Подтв.'}
                           </button>
-                          <button className="btn btn-sm btn-danger" onClick={() => deleteGuest(g.id)}>
-                            Удалить
-                          </button>
+                          <button className="btn btn-sm btn-danger" onClick={() => deleteGuest(g.id)}>Удалить</button>
                         </div>
                       </td>
                     </tr>
@@ -248,35 +187,57 @@ export default function Admin() {
         </>
       )}
 
+      {/* Photo emails tab */}
+      {tab === 'photos' && (
+        <>
+          <p style={{color:'var(--text-muted)', marginBottom:'1.5rem', fontSize:'0.97rem'}}>
+            Участники, оставившие почту для доступа к фотоальбому на Яндекс.Диске.
+          </p>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr><th>#</th><th>ФИО</th><th>Почта</th></tr>
+              </thead>
+              <tbody>
+                {photoEmails.length === 0 && (
+                  <tr><td colSpan="3" className="text-center" style={{color:'var(--text-muted)', padding:'2rem'}}>Почт пока нет</td></tr>
+                )}
+                {photoEmails.map((p, i) => (
+                  <tr key={i}>
+                    <td style={{color:'var(--text-muted)'}}>{i + 1}</td>
+                    <td style={{fontWeight:600}}>{p.name}</td>
+                    <td><a href={`mailto:${p.email}`} style={{color:'var(--gold)'}}>{p.email}</a></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {photoEmails.length > 0 && (
+            <div style={{marginTop:'1rem', padding:'1rem 1.5rem', background:'var(--white)', border:'1px solid var(--border)', borderRadius:'8px', fontSize:'0.9rem', color:'var(--text-muted)'}}>
+              Всего почт: <strong style={{color:'var(--navy)'}}>{photoEmails.length}</strong>
+              {' · '}
+              <a href={`mailto:?bcc=${photoEmails.map(p=>p.email).join(',')}`} style={{color:'var(--gold)', fontWeight:700}}>
+                Написать всем
+              </a>
+            </div>
+          )}
+        </>
+      )}
+
       {/* Info tab */}
       {tab === 'info' && (
         <div className="form-wrap">
-          <p style={{color:'var(--text-muted)', fontSize:'0.9rem', marginBottom:'1.5rem'}}>
-            Эти данные отображаются на сайте для всех посетителей.
-          </p>
+          <p style={{color:'var(--text-muted)', fontSize:'0.97rem', marginBottom:'1.5rem'}}>Эти данные отображаются на сайте для всех посетителей.</p>
           {INFO_FIELDS.map(({ key, label, textarea }) => (
             <div className="form-group" key={key} style={{marginBottom:'1rem'}}>
               <label>{label}</label>
               <div style={{display:'flex', gap:'0.6rem'}}>
                 {textarea
-                  ? <textarea
-                      value={infoEdits[key] ?? ''}
-                      onChange={e => setInfoEdits(p => ({...p, [key]: e.target.value}))}
-                      style={{flex:1}}
-                    />
-                  : <input
-                      type="text"
-                      value={infoEdits[key] ?? ''}
-                      onChange={e => setInfoEdits(p => ({...p, [key]: e.target.value}))}
-                      style={{flex:1}}
-                    />
+                  ? <textarea value={infoEdits[key] ?? ''} onChange={e => setInfoEdits(p => ({...p, [key]: e.target.value}))} style={{flex:1}} />
+                  : <input type="text" value={infoEdits[key] ?? ''} onChange={e => setInfoEdits(p => ({...p, [key]: e.target.value}))} style={{flex:1}} />
                 }
-                <button
-                  className="btn btn-primary btn-sm"
-                  style={{whiteSpace:'nowrap', alignSelf:'flex-start', marginTop: textarea ? 0 : 0}}
-                  onClick={() => saveInfo(key)}
-                  disabled={infoSaving === key}
-                >
+                <button className="btn btn-primary btn-sm" style={{whiteSpace:'nowrap', alignSelf:'flex-start'}}
+                  onClick={() => saveInfo(key)} disabled={infoSaving === key}>
                   {infoSaving === key ? '...' : 'Сохранить'}
                 </button>
               </div>
@@ -292,25 +253,13 @@ export default function Admin() {
           {pollMsg && <div className={`alert ${pollMsg.startsWith('✓') ? 'alert-success' : 'alert-error'}`}>{pollMsg}</div>}
           <div className="form-group" style={{marginBottom:'1rem'}}>
             <label>Заголовок опроса</label>
-            <input
-              type="text"
-              placeholder="Когда вам удобно встретиться?"
-              value={pollTitle}
-              onChange={e => setPollTitle(e.target.value)}
-            />
+            <input type="text" placeholder="Когда вам удобно встретиться?" value={pollTitle} onChange={e => setPollTitle(e.target.value)} />
           </div>
           <div className="form-group" style={{marginBottom:'1.5rem'}}>
             <label>Варианты дат (каждый с новой строки)</label>
-            <textarea
-              value={pollOptions}
-              onChange={e => setPollOptions(e.target.value)}
-              style={{minHeight:'120px'}}
-            />
+            <textarea value={pollOptions} onChange={e => setPollOptions(e.target.value)} style={{minHeight:'120px'}} />
           </div>
           <button className="btn btn-primary" onClick={createPoll}>Опубликовать опрос</button>
-          <p style={{marginTop:'0.8rem', fontSize:'0.82rem', color:'var(--text-muted)'}}>
-            Создание нового опроса деактивирует предыдущий.
-          </p>
         </div>
       )}
     </div>

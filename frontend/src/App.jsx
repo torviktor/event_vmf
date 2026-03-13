@@ -5,6 +5,8 @@ import Register from './pages/Register'
 import Program from './pages/Program'
 import Vote from './pages/Vote'
 import Admin from './pages/Admin'
+import Guests from './pages/Guests'
+import Checklist from './pages/Checklist'
 
 export default function App() {
   return (
@@ -16,9 +18,12 @@ export default function App() {
         <Route path="/program" element={<Program />} />
         <Route path="/vote" element={<Vote />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/guests" element={<Guests />} />
+        <Route path="/checklist" element={<Checklist />} />
       </Routes>
       <footer>
-        <strong>Встреча выпускников</strong> · Сделано с теплом для своих
+        <strong>Встреча выпускников ВМИРЭ им. А.С. Попова · Выпуск 2011</strong><br/>
+        Сделано с теплом для своих
       </footer>
     </>
   )

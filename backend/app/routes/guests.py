@@ -122,3 +122,9 @@ def delete_guest(guest_id: int, db: Session = Depends(get_db), _=Depends(check_a
     db.delete(guest)
     db.commit()
     return {"ok": True}
+
+
+@router.get("/public", summary="Публичный список имён подтверждённых участников")
+def public_guest_list(db: Session = Depends(get_db)):
+    guests = db.query(Guest).filter(Guest.is_confirmed == True).order_by(Guest.name).all()
+    return [g.name for g in guests]
