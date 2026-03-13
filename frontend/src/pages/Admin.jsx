@@ -133,6 +133,9 @@ export default function Admin() {
         <>
           <div style={{marginBottom:'1rem', display:'flex', justifyContent:'flex-end'}}>
             <button className="btn btn-gold btn-sm" onClick={loadGuests}>Обновить</button>
+            <a href="/api/export/guests.csv" download>
+              <button className="btn btn-primary btn-sm">Скачать CSV (Excel)</button>
+            </a>
           </div>
           {guestsLoading ? <div className="spinner" /> : (
             <div className="table-wrap">
