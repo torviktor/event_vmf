@@ -112,8 +112,6 @@ export default function Home() {
             <span className="stat-label">Детей</span>
           </div>
           <div className="stat-item">
-            <span className="stat-number">{stats.restaurant}</span>
-            <span className="stat-label">В ресторан</span>
           </div>
         </div>
       )}
