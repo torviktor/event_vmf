@@ -2,6 +2,69 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 
+function Countdown() {
+  const target = new Date('2026-06-27T10:00:00')
+  const [diff, setDiff] = useState(target - new Date())
+
+  useEffect(() => {
+    const t = setInterval(() => setDiff(target - new Date()), 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  const total = Math.max(0, diff)
+  const days    = Math.floor(total / 86400000)
+  const hours   = Math.floor((total % 86400000) / 3600000)
+  const minutes = Math.floor((total % 3600000) / 60000)
+  const seconds = Math.floor((total % 60000) / 1000)
+
+  return (
+    <div style={{
+      background: 'var(--navy)',
+      borderBottom: '3px solid var(--gold)',
+      padding: '2.5rem 2rem',
+      textAlign: 'center',
+    }}>
+      <div style={{fontSize:'0.78rem', letterSpacing:'0.25em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'1.2rem', fontWeight:600}}>
+        До встречи осталось
+      </div>
+      <div style={{display:'flex', justifyContent:'center', gap:'0', flexWrap:'wrap'}}>
+        {[
+          [days,    'дней'],
+          [hours,   'часов'],
+          [minutes, 'минут'],
+          [seconds, 'секунд'],
+        ].map(([val, label], i, arr) => (
+          <div key={label} style={{display:'flex', alignItems:'stretch'}}>
+            <div style={{padding:'0 2rem', textAlign:'center', minWidth:'100px'}}>
+              <div style={{
+                fontFamily:'Playfair Display, serif',
+                fontSize:'clamp(3rem, 8vw, 5rem)',
+                fontWeight:700,
+                color:'var(--white)',
+                lineHeight:1,
+                minWidth:'2ch',
+                display:'inline-block',
+              }}>
+                {String(val).padStart(2,'0')}
+              </div>
+              <div style={{fontSize:'0.75rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'rgba(255,255,255,0.45)', marginTop:'0.5rem', fontWeight:600}}>
+                {label}
+              </div>
+            </div>
+            {i < arr.length - 1 && (
+              <div style={{color:'var(--gold)', fontSize:'clamp(2rem,5vw,3.5rem)', fontWeight:300, alignSelf:'center', opacity:0.5, marginTop:'-0.5rem'}}>:</div>
+            )}
+          </div>
+        ))}
+      </div>
+      <div style={{marginTop:'1.2rem', fontSize:'0.88rem', color:'rgba(255,255,255,0.4)', letterSpacing:'0.1em'}}>
+        27 июня 2026 · Санкт-Петербург · ВМИРЭ им. А.С. Попова
+      </div>
+    </div>
+  )
+}
+
+
 export default function Home() {
   const [stats, setStats] = useState(null)
   const [info, setInfo] = useState({})
@@ -31,6 +94,8 @@ export default function Home() {
           </Link>
         </div>
       </div>
+
+      <Countdown />
 
       {stats && (
         <div className="stats-bar">
