@@ -23,7 +23,7 @@ export default function App() {
       </Routes>
       <footer>
         <strong>Встреча выпускников ВМИРЭ им. А.С. Попова · Выпуск 2011</strong><br/>
-        Сделано с теплом для своих
+        Разработка <a href="https://t.me/TORVIKTOR" target="_blank" rel="noopener noreferrer" style={{color:'var(--gold)'}}>t.me/TORVIKTOR</a>
       </footer>
     </>
   )
