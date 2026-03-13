@@ -1,14 +1,7 @@
 """
-Запускать на сервере:
-  cd /opt/event_vmf
-  docker compose exec reunion-backend python /app/seed_guests.py
-  
-Или напрямую:
-  docker run --rm --network event_vmf_reunion-net \
-    -e DATABASE_URL=postgresql://reunion:ПАРОЛЬ@reunion-db:5432/reunion \
-    event_vmf-reunion-backend python /app/seed_guests.py
+Запускать на сервере ТОЛЬКО если база пустая:
+  docker compose exec reunion-backend python /app/app/seed_guests.py
 """
-
 import sys
 sys.path.insert(0, '/app')
 
@@ -19,45 +12,76 @@ from datetime import datetime
 Base.metadata.create_all(bind=engine)
 db = SessionLocal()
 
-# Проверяем что база пустая чтобы не задваивать
 existing = db.query(Guest).count()
 if existing > 0:
-    print(f"В базе уже {existing} участников. Пропускаем.")
+    print(f"В базе уже {existing} записей. Удалите их вручную если хотите перезалить.")
     db.close()
     sys.exit(0)
 
+# Логика:
+# - Каждый выпускник — отдельная запись, adults_count=1
+# - Супруга — отдельная запись, adults_count=1
+# - Дети — в поле children у выпускника (не отдельные записи)
+
 guests_data = [
-    # Выпускники
-    dict(name="Дук Денис Игоревич",          phone="",  specialty="",   adults_count=1, children=[], will_attend_institute=True, will_attend_restaurant=True, is_confirmed=True),
-    dict(name="Веревкин Виктор Александрович", phone="", specialty="",  adults_count=3, children=[{"name":"Демид","age":None},{"name":"Артём","age":None}], will_attend_institute=True, will_attend_restaurant=True, is_confirmed=True),
-    dict(name="Аксенов Дмитрий Александрович", phone="", specialty="",  adults_count=2, children=[{"name":"Глеб","age":None},{"name":"Артемий","age":None}], will_attend_institute=True, will_attend_restaurant=True, is_confirmed=True),
-    dict(name="Тур Сергей Сергеевич",          phone="", specialty="",  adults_count=1, children=[], will_attend_institute=True, will_attend_restaurant=True, is_confirmed=True),
-    # Члены семей (отдельно для учёта)
-    dict(name="Веревкина Анна Валерьевна (супруга)", phone="", specialty="", adults_count=1, children=[], will_attend_institute=True, will_attend_restaurant=True, is_confirmed=True),
-    dict(name="Аксенова Галина Борисовна (супруга)",  phone="", specialty="", adults_count=1, children=[], will_attend_institute=True, will_attend_restaurant=True, is_confirmed=True),
+    dict(
+        name="Дук Денис Игоревич",
+        adults_count=1,
+        children=[],
+    ),
+    dict(
+        name="Веревкин Виктор Александрович",
+        adults_count=1,
+        children=[
+            {"name": "Демид", "age": None},
+            {"name": "Артём", "age": None},
+        ],
+    ),
+    dict(
+        name="Веревкина Анна Валерьевна (супруга)",
+        adults_count=1,
+        children=[],
+    ),
+    dict(
+        name="Аксенов Дмитрий Александрович",
+        adults_count=1,
+        children=[
+            {"name": "Глеб", "age": None},
+            {"name": "Артемий", "age": None},
+        ],
+    ),
+    dict(
+        name="Аксенова Галина Борисовна (супруга)",
+        adults_count=1,
+        children=[],
+    ),
+    dict(
+        name="Тур Сергей Сергеевич",
+        adults_count=1,
+        children=[],
+    ),
 ]
 
 for g in guests_data:
     guest = Guest(
         name=g['name'],
-        phone=g['phone'],
+        phone="",
         graduation_year=2011,
-        specialty=g['specialty'],
+        specialty="",
         adults_count=g['adults_count'],
         children=g['children'],
-        will_attend_institute=g['will_attend_institute'],
-        will_attend_restaurant=g['will_attend_restaurant'],
-        is_confirmed=g['is_confirmed'],
+        will_attend_institute=True,
+        will_attend_restaurant=True,
+        is_confirmed=True,
         created_at=datetime.utcnow(),
     )
     db.add(guest)
 
 db.commit()
-print(f"Добавлено {len(guests_data)} записей.")
 
-# Итог
-total = db.query(Guest).count()
-adults = sum(g.adults_count for g in db.query(Guest).all())
+total    = db.query(Guest).count()
+adults   = sum(g.adults_count for g in db.query(Guest).all())
 children = sum(len(g.children) for g in db.query(Guest).all())
-print(f"Итого в базе: {total} записей, {adults} взрослых, {children} детей.")
+print(f"Добавлено {len(guests_data)} записей.")
+print(f"Итого: {total} записей | {adults} взрослых | {children} детей")
 db.close()
