@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet'
+import { MapContainer, TileLayer, CircleMarker, Popup, AttributionControl } from 'react-leaflet'
 
 const RESTAURANTS = [
   {
@@ -322,11 +322,13 @@ export default function Restaurants() {
           zoom={12}
           scrollWheelZoom={true}
           ref={mapRef}
+          attributionControl={false}
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+          <AttributionControl prefix={false} position="bottomright" />
           {RESTAURANTS.map(r => {
             const meta = STATUS_META[r.status]
             return (
