@@ -13,6 +13,7 @@ class Guest(Base):
     graduation_year = Column(Integer, nullable=True)      # Год выпуска
     specialty = Column(String(200), nullable=True)        # Специальность / факультет
     adults_count = Column(Integer, default=1)             # Кол-во взрослых (с собой)
+    spouse_name = Column(String(200), nullable=True)      # Имя супруга/супруги (если adults_count>=2)
     children = Column(JSON, default=list)                 # [{age: 5, name: "Петя"}, ...]
     will_attend_institute = Column(Boolean, default=True) # Пойдёт на экскурсию
     will_attend_restaurant = Column(Boolean, default=True)# Пойдёт в ресторан

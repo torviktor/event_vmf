@@ -24,6 +24,7 @@ export const api = {
   confirmGuest: (id) => req('PATCH', `/guests/${id}/confirm`),
   deleteGuest: (id) => req('DELETE', `/guests/${id}`),
   setPayment: (id, category, paid) => req('PATCH', `/guests/${id}/payment`, { category, paid }),
+  setSpouseName: (id, spouse_name) => req('PATCH', `/guests/${id}/spouse-name`, { spouse_name }),
   getPaymentsSummary: () => req('GET', '/guests/payments-summary'),
   getPublicGuests: () => req('GET', '/guests/public'),
 

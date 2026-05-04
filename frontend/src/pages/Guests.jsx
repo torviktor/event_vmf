@@ -98,17 +98,19 @@ export default function Guests() {
                 </thead>
                 <tbody>
                   {rows.map((r, i) => {
+                    const isSecondary = r.is_child || r.is_spouse
                     const restDim = r.is_child && kidsRule === 'free'
+                    const label = r.is_child ? '(ребёнок)' : (r.is_spouse ? '(супруга)' : null)
                     return (
                       <tr key={i}>
                         <td style={{color:'var(--text-muted)'}}>{i + 1}</td>
                         <td>
-                          <strong style={{color: r.is_child ? 'var(--text-muted)' : 'inherit', fontWeight: r.is_child ? 500 : 700}}>
+                          <strong style={{color: isSecondary ? 'var(--text-muted)' : 'inherit', fontWeight: isSecondary ? 500 : 700, fontStyle: isSecondary ? 'italic' : 'normal'}}>
                             {r.name}
                           </strong>
-                          {r.is_child && (
+                          {label && (
                             <span style={{marginLeft:'0.5rem', fontSize:'0.82rem', color:'var(--text-muted)', fontStyle:'italic'}}>
-                              (ребёнок)
+                              {label}
                             </span>
                           )}
                         </td>

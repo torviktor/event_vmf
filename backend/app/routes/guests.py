@@ -23,6 +23,7 @@ class GuestCreate(BaseModel):
     graduation_year: Optional[int] = None
     specialty: Optional[str] = None
     adults_count: int = 1
+    spouse_name: Optional[str] = None
     children: List[ChildInfo] = []
     will_attend_institute: bool = True
     will_attend_restaurant: bool = True
@@ -37,6 +38,7 @@ class GuestOut(BaseModel):
     graduation_year: Optional[int]
     specialty: Optional[str]
     adults_count: int
+    spouse_name: Optional[str] = None
     children: list
     will_attend_institute: bool
     will_attend_restaurant: bool
@@ -54,6 +56,10 @@ class GuestOut(BaseModel):
 class PaymentUpdate(BaseModel):
     category: str   # "photographer" | "restaurant"
     paid: bool
+
+
+class SpouseNameUpdate(BaseModel):
+    spouse_name: Optional[str] = None
 
 
 # --- Auth helper ---
@@ -80,6 +86,7 @@ def register_guest(data: GuestCreate, db: Session = Depends(get_db)):
         graduation_year=data.graduation_year,
         specialty=data.specialty,
         adults_count=data.adults_count,
+        spouse_name=(data.spouse_name or None),
         children=[c.model_dump() for c in data.children],
         will_attend_institute=data.will_attend_institute,
         will_attend_restaurant=data.will_attend_restaurant,
@@ -136,23 +143,46 @@ def public_guest_list(db: Session = Depends(get_db)):
     guests = db.query(Guest).filter(Guest.is_confirmed == True).order_by(Guest.name).all()
     rows = []
     for g in guests:
-        # Взрослый-регистрант (одной строкой; если adults_count>1 — флаг общий на запись).
+        paid_photo = bool(g.paid_photographer)
+        paid_rest = bool(g.paid_restaurant)
+
+        # Регистрант
         rows.append({
             "name": g.name,
-            "paid_photographer": bool(g.paid_photographer),
-            "paid_restaurant": bool(g.paid_restaurant),
+            "is_spouse": False,
             "is_child": False,
+            "parent_id": None,
+            "guest_id": g.id,
+            "paid_photographer": paid_photo,
+            "paid_restaurant": paid_rest,
         })
-        # Дети — отдельными строками. У детей нет своих флагов оплаты.
-        for idx, child in enumerate(g.children or [], start=1):
+
+        # Супруг(а): если adults_count>=2 и регистрант не один — наследует оплаты.
+        if (g.adults_count or 0) >= 2:
+            spouse_label = (g.spouse_name or "").strip() or "Супруга"
+            rows.append({
+                "name": spouse_label,
+                "is_spouse": True,
+                "is_child": False,
+                "parent_id": g.id,
+                "guest_id": g.id,
+                "paid_photographer": paid_photo,
+                "paid_restaurant": paid_rest,
+            })
+
+        # Дети — без своих флагов оплаты.
+        for child in (g.children or []):
             child_name = (child.get("name") or "").strip() if isinstance(child, dict) else ""
             if not child_name:
                 child_name = f"Ребёнок ({g.name})"
             rows.append({
                 "name": child_name,
+                "is_spouse": False,
+                "is_child": True,
+                "parent_id": g.id,
+                "guest_id": g.id,
                 "paid_photographer": False,
                 "paid_restaurant": False,
-                "is_child": True,
             })
     return rows
 
@@ -177,9 +207,20 @@ def set_payment(guest_id: int, data: PaymentUpdate, db: Session = Depends(get_db
     }
 
 
+@router.patch("/{guest_id}/spouse-name", summary="Установить имя супруга/супруги (admin)")
+def set_spouse_name(guest_id: int, data: SpouseNameUpdate, db: Session = Depends(get_db), _=Depends(check_admin)):
+    guest = db.query(Guest).filter(Guest.id == guest_id).first()
+    if not guest:
+        raise HTTPException(status_code=404, detail="Не найден")
+    cleaned = (data.spouse_name or "").strip()
+    guest.spouse_name = cleaned or None
+    db.commit()
+    return {"ok": True, "id": guest.id, "spouse_name": guest.spouse_name}
+
+
 @router.get("/payments-summary", summary="Сводка по оплатам (публичная)")
 def payments_summary(db: Session = Depends(get_db)):
-    # Берём всех подтверждённых: для фотографа — все, для ресторана — только тех, кто идёт в ресторан.
+    # Один guest-record = один плательщик (даже если он с супругой).
     confirmed = db.query(Guest).filter(Guest.is_confirmed == True).all()
 
     info_items = {i.key: i.value for i in db.query(EventInfo).all()}
@@ -190,48 +231,47 @@ def payments_summary(db: Session = Depends(get_db)):
         except (TypeError, ValueError):
             return default
 
-    photo_per_person = _to_int(info_items.get("photographer_per_adult"), 1500)
     photo_total_fixed = _to_int(info_items.get("photographer_total"), 24000)
     restaurant_deposit_raw = (info_items.get("restaurant_deposit") or "").strip()
     restaurant_deposit = _to_int(restaurant_deposit_raw, 0) if restaurant_deposit_raw else None
     kids_rule = (info_items.get("restaurant_kids_rule") or "free").strip() or "free"
 
-    # Photographer: всё подтверждённые взрослые.
-    photo_total_adults = sum(g.adults_count or 0 for g in confirmed)
-    photo_paid_adults = sum((g.adults_count or 0) for g in confirmed if g.paid_photographer)
-    photo_paid_count = sum(1 for g in confirmed if g.paid_photographer)
-    photo_unpaid_count = sum(1 for g in confirmed if not g.paid_photographer)
+    # Photographer: все подтверждённые записи — плательщики.
+    photo_payers = list(confirmed)
+    photo_payers_count = len(photo_payers)
+    photo_paid_count = sum(1 for g in photo_payers if g.paid_photographer)
+    photo_unpaid_count = photo_payers_count - photo_paid_count
+    photo_per_person = round(photo_total_fixed / photo_payers_count) if photo_payers_count > 0 else None
 
     # Restaurant: только идущие в ресторан.
-    rest_guests = [g for g in confirmed if g.will_attend_restaurant]
-    rest_total_adults = sum(g.adults_count or 0 for g in rest_guests)
-    rest_paid_adults = sum((g.adults_count or 0) for g in rest_guests if g.paid_restaurant)
-    rest_paid_count = sum(1 for g in rest_guests if g.paid_restaurant)
-    rest_unpaid_count = sum(1 for g in rest_guests if not g.paid_restaurant)
-
-    if restaurant_deposit and rest_total_adults > 0:
-        rest_per_person = round(restaurant_deposit / rest_total_adults)
-    else:
-        rest_per_person = None
+    rest_payers = [g for g in confirmed if g.will_attend_restaurant]
+    rest_payers_count = len(rest_payers)
+    rest_paid_count = sum(1 for g in rest_payers if g.paid_restaurant)
+    rest_unpaid_count = rest_payers_count - rest_paid_count
+    rest_per_person = (
+        round(restaurant_deposit / rest_payers_count)
+        if (restaurant_deposit and rest_payers_count > 0)
+        else None
+    )
 
     return {
         "photographer": {
-            "per_person": photo_per_person,
+            "per_person": photo_per_person,                       # вычислено: total_fixed / payers; None если payers=0
             "total_fixed": photo_total_fixed,
-            "total_expected": photo_total_adults * photo_per_person,
-            "total_collected": photo_paid_adults * photo_per_person,
+            "total_expected": photo_total_fixed,                  # фикс из info
+            "total_collected": (photo_paid_count * photo_per_person) if photo_per_person else 0,
             "paid_count": photo_paid_count,
             "unpaid_count": photo_unpaid_count,
-            "total_adults": photo_total_adults,
+            "payers_count": photo_payers_count,
         },
         "restaurant": {
-            "deposit": restaurant_deposit,                    # None если админ ещё не задал
-            "per_person": rest_per_person,                    # None если депозит не задан
-            "kids_rule": kids_rule,                           # free | half | full
+            "deposit": restaurant_deposit,                        # None если админ ещё не задал
+            "per_person": rest_per_person,                        # None если депозит не задан или payers=0
+            "kids_rule": kids_rule,                               # free | half | full
             "total_expected": (restaurant_deposit if restaurant_deposit else None),
-            "total_collected": (rest_paid_adults * rest_per_person) if rest_per_person else 0,
+            "total_collected": (rest_paid_count * rest_per_person) if rest_per_person else 0,
             "paid_count": rest_paid_count,
             "unpaid_count": rest_unpaid_count,
-            "total_adults": rest_total_adults,
+            "payers_count": rest_payers_count,
         },
     }

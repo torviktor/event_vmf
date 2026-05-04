@@ -42,6 +42,10 @@ export default function Admin() {
   const [paymentSettingsSaving, setPaymentSettingsSaving] = useState(false)
   const [paymentSettingsMsg, setPaymentSettingsMsg] = useState('')
 
+  // Spouse name editing (по ID гостя)
+  const [spouseEdits, setSpouseEdits] = useState({})    // { [id]: "имя" }
+  const [spouseSavingId, setSpouseSavingId] = useState(null)
+
   async function login() {
     try {
       const res = await api.login(password)
@@ -97,6 +101,19 @@ export default function Admin() {
         : g))
       alert('Не удалось сохранить: ' + (e.message || 'ошибка'))
     }
+  }
+
+  async function saveSpouseName(guestId) {
+    const value = (spouseEdits[guestId] ?? '').trim()
+    setSpouseSavingId(guestId)
+    try {
+      await api.setSpouseName(guestId, value)
+      setGuests(prev => prev.map(g => g.id === guestId ? { ...g, spouse_name: value || null } : g))
+      setSpouseEdits(prev => { const next = { ...prev }; delete next[guestId]; return next })
+    } catch (e) {
+      alert('Не удалось сохранить имя супруга/супруги: ' + (e.message || ''))
+    }
+    setSpouseSavingId(null)
   }
 
   async function savePaymentSettings() {
@@ -247,6 +264,25 @@ export default function Admin() {
                       <td style={{color:'var(--text-muted)', fontSize:'0.9rem'}}>{g.specialty || '—'}</td>
                       <td style={{fontSize:'0.9rem'}}>
                         {g.adults_count} взр.
+                        {g.adults_count >= 2 && (
+                          <div style={{display:'flex', gap:'0.3rem', alignItems:'center', marginTop:'0.3rem', flexWrap:'wrap'}}>
+                            <input
+                              type="text"
+                              placeholder="Имя супруга/супруги"
+                              value={spouseEdits[g.id] !== undefined ? spouseEdits[g.id] : (g.spouse_name || '')}
+                              onChange={e => setSpouseEdits(prev => ({...prev, [g.id]: e.target.value}))}
+                              style={{flex:'1 1 140px', minWidth:'120px', border:'1px solid var(--cream-dark)', borderRadius:'4px', padding:'0.3rem 0.5rem', fontFamily:'Raleway,sans-serif', fontSize:'0.82rem', background:'var(--cream)', outline:'none'}}
+                            />
+                            <button
+                              className="btn btn-sm btn-gold"
+                              style={{padding:'0.25rem 0.6rem', fontSize:'0.72rem'}}
+                              disabled={spouseSavingId === g.id || spouseEdits[g.id] === undefined || (spouseEdits[g.id] || '').trim() === (g.spouse_name || '')}
+                              onClick={() => saveSpouseName(g.id)}
+                            >
+                              {spouseSavingId === g.id ? '...' : 'OK'}
+                            </button>
+                          </div>
+                        )}
                         {g.children.map((c,ci) => (
                           <div key={ci} style={{color:'var(--text-muted)', fontSize:'0.82rem'}}>{c.name||`Ребёнок ${ci+1}`}, {c.age||'?'} л.</div>
                         ))}
@@ -333,40 +369,63 @@ export default function Admin() {
                 {guests.length === 0 && (
                   <tr><td colSpan="5" className="text-center" style={{color:'var(--text-muted)', padding:'2rem'}}>Заявок пока нет</td></tr>
                 )}
-                {guests.map((g, i) => (
-                  <tr key={g.id}>
-                    <td style={{color:'var(--text-muted)'}}>{i+1}</td>
-                    <td>
-                      <strong>{g.name}</strong>
-                      {!g.is_confirmed && (
-                        <div style={{fontSize:'0.78rem', color:'var(--text-muted)', fontStyle:'italic'}}>не подтверждён</div>
-                      )}
-                    </td>
-                    <td style={{fontSize:'0.85rem', color:'var(--text-muted)'}}>
-                      {(g.children && g.children.length) ? g.children.map((c,ci) => (
-                        <div key={ci}>{c.name||`Ребёнок ${ci+1}`}{c.age ? `, ${c.age} л.` : ''}</div>
-                      )) : '—'}
-                    </td>
-                    <td style={{textAlign:'center'}}>
-                      <input
-                        type="checkbox"
-                        checked={!!g.paid_photographer}
-                        onChange={() => togglePayment(g.id, 'photographer', !!g.paid_photographer)}
-                        style={{width:'20px', height:'20px', cursor:'pointer'}}
-                      />
-                    </td>
-                    <td style={{textAlign:'center'}}>
-                      <input
-                        type="checkbox"
-                        checked={!!g.paid_restaurant}
-                        onChange={() => togglePayment(g.id, 'restaurant', !!g.paid_restaurant)}
-                        disabled={!g.will_attend_restaurant}
-                        title={!g.will_attend_restaurant ? 'Не идёт в ресторан' : ''}
-                        style={{width:'20px', height:'20px', cursor: g.will_attend_restaurant ? 'pointer' : 'not-allowed'}}
-                      />
-                    </td>
-                  </tr>
-                ))}
+                {guests.map((g, i) => {
+                  const rows = []
+                  rows.push(
+                    <tr key={`r-${g.id}`}>
+                      <td style={{color:'var(--text-muted)'}}>{i+1}</td>
+                      <td>
+                        <strong>{g.name}</strong>
+                        {!g.is_confirmed && (
+                          <div style={{fontSize:'0.78rem', color:'var(--text-muted)', fontStyle:'italic'}}>не подтверждён</div>
+                        )}
+                      </td>
+                      <td style={{fontSize:'0.85rem', color:'var(--text-muted)'}}>
+                        {(g.children && g.children.length) ? g.children.map((c,ci) => (
+                          <div key={ci}>{c.name||`Ребёнок ${ci+1}`}{c.age ? `, ${c.age} л.` : ''}</div>
+                        )) : '—'}
+                      </td>
+                      <td style={{textAlign:'center'}}>
+                        <input
+                          type="checkbox"
+                          checked={!!g.paid_photographer}
+                          onChange={() => togglePayment(g.id, 'photographer', !!g.paid_photographer)}
+                          style={{width:'20px', height:'20px', cursor:'pointer'}}
+                        />
+                      </td>
+                      <td style={{textAlign:'center'}}>
+                        <input
+                          type="checkbox"
+                          checked={!!g.paid_restaurant}
+                          onChange={() => togglePayment(g.id, 'restaurant', !!g.paid_restaurant)}
+                          disabled={!g.will_attend_restaurant}
+                          title={!g.will_attend_restaurant ? 'Не идёт в ресторан' : ''}
+                          style={{width:'20px', height:'20px', cursor: g.will_attend_restaurant ? 'pointer' : 'not-allowed'}}
+                        />
+                      </td>
+                    </tr>
+                  )
+                  if ((g.adults_count || 0) >= 2) {
+                    const spouseLabel = (g.spouse_name && g.spouse_name.trim()) || 'Супруга'
+                    rows.push(
+                      <tr key={`s-${g.id}`} style={{background:'rgba(0,0,0,0.015)'}}>
+                        <td></td>
+                        <td style={{paddingLeft:'1.6rem'}}>
+                          <span style={{color:'var(--text-muted)', fontStyle:'italic'}}>{spouseLabel}</span>
+                          <span style={{marginLeft:'0.5rem', fontSize:'0.78rem', color:'var(--text-muted)'}}>(супруга)</span>
+                        </td>
+                        <td></td>
+                        <td style={{textAlign:'center', color: g.paid_photographer ? '#1e8449' : 'var(--text-muted)', fontWeight: g.paid_photographer ? 700 : 400}}>
+                          {g.paid_photographer ? '✓' : '—'}
+                        </td>
+                        <td style={{textAlign:'center', color: (g.paid_restaurant && g.will_attend_restaurant) ? '#1e8449' : 'var(--text-muted)', fontWeight: (g.paid_restaurant && g.will_attend_restaurant) ? 700 : 400}}>
+                          {g.will_attend_restaurant ? (g.paid_restaurant ? '✓' : '—') : '—'}
+                        </td>
+                      </tr>
+                    )
+                  }
+                  return rows
+                })}
               </tbody>
             </table>
           </div>
