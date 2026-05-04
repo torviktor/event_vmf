@@ -104,7 +104,10 @@ export default function Admin() {
   }
 
   async function saveSpouseName(guestId) {
-    const value = (spouseEdits[guestId] ?? '').trim()
+    // Берём то, что реально показано в инпуте: либо отредактированное, либо текущее значение из БД.
+    const edited = spouseEdits[guestId]
+    const dbValue = (guests.find(g => g.id === guestId)?.spouse_name) || ''
+    const value = (edited !== undefined ? edited : dbValue).trim()
     setSpouseSavingId(guestId)
     try {
       await api.setSpouseName(guestId, value)
@@ -276,7 +279,7 @@ export default function Admin() {
                             <button
                               className="btn btn-sm btn-gold"
                               style={{padding:'0.25rem 0.6rem', fontSize:'0.72rem'}}
-                              disabled={spouseSavingId === g.id || spouseEdits[g.id] === undefined || (spouseEdits[g.id] || '').trim() === (g.spouse_name || '')}
+                              disabled={spouseSavingId === g.id}
                               onClick={() => saveSpouseName(g.id)}
                             >
                               {spouseSavingId === g.id ? '...' : 'OK'}
