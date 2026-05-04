@@ -11,6 +11,7 @@ export default function Navbar() {
       <ul className="nav-links">
         <li><Link to="/">Главная</Link></li>
         <li><Link to="/program">Программа</Link></li>
+        <li><Link to="/restaurants">Рестораны</Link></li>
         <li><Link to="/guests">Участники</Link></li>
         <li><Link to="/register">Регистрация</Link></li>
         <li><Link to="/checklist">Оргкомитет</Link></li>

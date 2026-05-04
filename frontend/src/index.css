@@ -10,6 +10,9 @@
   --white: #ffffff;
   --border: rgba(201,168,76,0.3);
   --shadow: 0 4px 24px rgba(26,39,68,0.12);
+  --status-go: #2d8659;
+  --status-maybe: #d4a548;
+  --status-no: #b04444;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -186,6 +189,37 @@ footer strong { color: var(--gold); }
   .hero-anchor, .hero-anniversary { display: none; }
   .section { padding: 2.8rem 1.3rem; }
   .form-wrap { padding: 1.8rem; }
+}
+
+/* Restaurants */
+.rest-legend { display: flex; gap: 1.4rem; flex-wrap: wrap; margin-bottom: 1.6rem; }
+.rest-legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.92rem; color: var(--text-muted); }
+.rest-legend-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--white); box-shadow: 0 0 0 1px var(--cream-dark); flex-shrink: 0; }
+.rest-map-wrap { width: 100%; height: 500px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 0.6rem; }
+.rest-map-wrap .leaflet-container { width: 100%; height: 100%; font-family: 'Raleway', sans-serif; }
+.rest-map-hint { font-size: 0.82rem; color: var(--text-muted); font-style: italic; margin-bottom: 2rem; }
+.rest-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.4rem; }
+.rest-card { position: relative; background: var(--white); border: 2px solid var(--border); border-radius: 10px; padding: 1.5rem 1.6rem 1.5rem 1.9rem; box-shadow: var(--shadow); transition: border-color 0.2s, transform 0.15s; cursor: pointer; overflow: hidden; }
+.rest-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--status, var(--cream-dark)); }
+.rest-card:hover { transform: translateY(-2px); }
+.rest-card.card-active { border-color: var(--gold); }
+.rest-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 0.4rem; }
+.rest-card h3 { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--navy); line-height: 1.25; }
+.rest-badge { display: inline-block; padding: 0.25rem 0.7rem; border-radius: 12px; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--white); background: var(--status, var(--text-muted)); flex-shrink: 0; white-space: nowrap; }
+.rest-meta { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.7rem; }
+.rest-desc { font-size: 0.95rem; color: var(--text); margin-bottom: 0.5rem; }
+.rest-check { font-size: 0.92rem; color: var(--text); margin-bottom: 0.6rem; }
+.rest-check strong { color: var(--navy); font-weight: 700; }
+.rest-links { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.9rem; margin-bottom: 0.7rem; }
+.rest-links a { color: var(--navy); font-weight: 600; border-bottom: 1px dashed var(--gold); }
+.rest-links a:hover { color: var(--gold); }
+.rest-comment { font-size: 0.86rem; color: var(--text-muted); font-style: italic; padding-top: 0.7rem; border-top: 1px solid var(--cream-dark); }
+.rest-popup b { color: var(--navy); font-family: 'Playfair Display', serif; font-size: 1rem; }
+.rest-popup-status { display: inline-block; margin-top: 0.3rem; padding: 0.15rem 0.55rem; border-radius: 10px; font-size: 0.72rem; font-weight: 700; color: var(--white); }
+
+@media (max-width: 768px) {
+  .rest-map-wrap { height: 350px; }
+  .rest-grid { grid-template-columns: 1fr; }
 }
 
 .spinner { width: 44px; height: 44px; border: 3px solid var(--cream-dark); border-top-color: var(--navy); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 3rem auto; }
