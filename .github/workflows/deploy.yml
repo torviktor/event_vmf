@@ -15,8 +15,9 @@ jobs:
           username: root
           key: ${{ secrets.REUNION_SSH_KEY }}
           script: |
-            cd /opt/reunion
-            git pull origin main
+            cd /opt/event_vmf
+            git fetch origin main
+            git reset --hard origin/main
             docker compose down
             docker compose up -d --build
-            docker system prune -f
+            docker image prune -f --filter "label=com.docker.compose.project=event_vmf"
