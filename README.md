@@ -117,3 +117,5 @@ reunion/
 | POST | /api/vote/{id}/vote | Проголосовать |
 | GET | /api/info/ | Настройки сайта |
 | POST | /api/info/ | Обновить настройку (admin) |
+
+<!-- ci-deploy-test: 2026-05-04 -->
