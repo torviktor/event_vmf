@@ -35,6 +35,13 @@ export default function Admin() {
   const [pollOptions, setPollOptions] = useState('14 июня (суббота)\n21 июня (суббота)\n28 июня (суббота)')
   const [pollMsg, setPollMsg]       = useState('')
 
+  // Payments
+  const [paymentsSummary, setPaymentsSummary] = useState(null)
+  const [restaurantDepositInput, setRestaurantDepositInput] = useState('')
+  const [kidsRuleInput, setKidsRuleInput] = useState('free')
+  const [paymentSettingsSaving, setPaymentSettingsSaving] = useState(false)
+  const [paymentSettingsMsg, setPaymentSettingsMsg] = useState('')
+
   async function login() {
     try {
       const res = await api.login(password)
@@ -60,13 +67,52 @@ export default function Admin() {
       const i = await api.getInfo()
       setInfo(i)
       setInfoEdits(i)
+      setRestaurantDepositInput(i.restaurant_deposit || '')
+      setKidsRuleInput(i.restaurant_kids_rule || 'free')
       if (i.checklist) {
         try { setChecklist(JSON.parse(i.checklist)) } catch {}
       }
     } catch {}
   }
 
-  useEffect(() => { if (token) { loadGuests(); loadInfo() } }, [token])
+  async function loadPaymentsSummary() {
+    try { setPaymentsSummary(await api.getPaymentsSummary()) } catch {}
+  }
+
+  useEffect(() => { if (token) { loadGuests(); loadInfo(); loadPaymentsSummary() } }, [token])
+
+  async function togglePayment(guestId, category, currentPaid) {
+    const next = !currentPaid
+    // оптимистично
+    setGuests(prev => prev.map(g => g.id === guestId
+      ? { ...g, [category === 'photographer' ? 'paid_photographer' : 'paid_restaurant']: next }
+      : g))
+    try {
+      await api.setPayment(guestId, category, next)
+      loadPaymentsSummary()
+    } catch (e) {
+      // откат
+      setGuests(prev => prev.map(g => g.id === guestId
+        ? { ...g, [category === 'photographer' ? 'paid_photographer' : 'paid_restaurant']: currentPaid }
+        : g))
+      alert('Не удалось сохранить: ' + (e.message || 'ошибка'))
+    }
+  }
+
+  async function savePaymentSettings() {
+    setPaymentSettingsSaving(true); setPaymentSettingsMsg('')
+    try {
+      await api.setInfo('restaurant_deposit', restaurantDepositInput.trim())
+      await api.setInfo('restaurant_kids_rule', kidsRuleInput)
+      await loadInfo()
+      await loadPaymentsSummary()
+      setPaymentSettingsMsg('✓ Сохранено')
+      setTimeout(() => setPaymentSettingsMsg(''), 2000)
+    } catch (e) {
+      setPaymentSettingsMsg('Ошибка: ' + (e.message || ''))
+    }
+    setPaymentSettingsSaving(false)
+  }
 
   async function toggleConfirm(id) { await api.confirmGuest(id); loadGuests() }
   async function deleteGuest(id) {
@@ -158,6 +204,7 @@ export default function Admin() {
       <div style={{display:'flex', gap:'0.5rem', marginBottom:'1.5rem', borderBottom:'2px solid var(--border)'}}>
         {[
           ['guests',    'Участники'],
+          ['payments',  'Оплаты'],
           ['photos',    'Доступ к фото'],
           ['checklist', 'Оргкомитет'],
           ['info',      'Настройки'],
@@ -226,6 +273,142 @@ export default function Admin() {
             </div>
           )}
         </>
+      )}
+
+      {/* Payments */}
+      {tab === 'payments' && (
+        <div>
+          <p style={{color:'var(--text-muted)', marginBottom:'1.2rem'}}>
+            Учёт оплат по двум категориям: фотограф (фикс. 24&nbsp;000&nbsp;₽ всего, 1&nbsp;500&nbsp;₽ со взрослого) и ресторан (депозит задаёт админ).
+          </p>
+
+          {/* Настройки сумм */}
+          <div className="form-wrap" style={{marginBottom:'1.5rem'}}>
+            <div className="form-grid">
+              <div className="form-group">
+                <label>Сумма депозита ресторана, ₽</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="100"
+                  placeholder="Например, 80000"
+                  value={restaurantDepositInput}
+                  onChange={e => setRestaurantDepositInput(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Дети за ресторан</label>
+                <select value={kidsRuleInput} onChange={e => setKidsRuleInput(e.target.value)}>
+                  <option value="free">Бесплатно</option>
+                  <option value="half">Половина</option>
+                  <option value="full">Как взрослые</option>
+                </select>
+              </div>
+            </div>
+            <div style={{marginTop:'1rem', display:'flex', alignItems:'center', gap:'1rem'}}>
+              <button className="btn btn-primary" onClick={savePaymentSettings} disabled={paymentSettingsSaving}>
+                {paymentSettingsSaving ? 'Сохранение...' : 'Сохранить'}
+              </button>
+              {paymentSettingsMsg && (
+                <span style={{color: paymentSettingsMsg.startsWith('✓') ? '#155724' : '#721c24', fontWeight:600}}>
+                  {paymentSettingsMsg}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Таблица оплат */}
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>ФИО</th>
+                  <th>Дети</th>
+                  <th style={{textAlign:'center', width:'100px'}}>Фото</th>
+                  <th style={{textAlign:'center', width:'120px'}}>Ресторан</th>
+                </tr>
+              </thead>
+              <tbody>
+                {guests.length === 0 && (
+                  <tr><td colSpan="5" className="text-center" style={{color:'var(--text-muted)', padding:'2rem'}}>Заявок пока нет</td></tr>
+                )}
+                {guests.map((g, i) => (
+                  <tr key={g.id}>
+                    <td style={{color:'var(--text-muted)'}}>{i+1}</td>
+                    <td>
+                      <strong>{g.name}</strong>
+                      {!g.is_confirmed && (
+                        <div style={{fontSize:'0.78rem', color:'var(--text-muted)', fontStyle:'italic'}}>не подтверждён</div>
+                      )}
+                    </td>
+                    <td style={{fontSize:'0.85rem', color:'var(--text-muted)'}}>
+                      {(g.children && g.children.length) ? g.children.map((c,ci) => (
+                        <div key={ci}>{c.name||`Ребёнок ${ci+1}`}{c.age ? `, ${c.age} л.` : ''}</div>
+                      )) : '—'}
+                    </td>
+                    <td style={{textAlign:'center'}}>
+                      <input
+                        type="checkbox"
+                        checked={!!g.paid_photographer}
+                        onChange={() => togglePayment(g.id, 'photographer', !!g.paid_photographer)}
+                        style={{width:'20px', height:'20px', cursor:'pointer'}}
+                      />
+                    </td>
+                    <td style={{textAlign:'center'}}>
+                      <input
+                        type="checkbox"
+                        checked={!!g.paid_restaurant}
+                        onChange={() => togglePayment(g.id, 'restaurant', !!g.paid_restaurant)}
+                        disabled={!g.will_attend_restaurant}
+                        title={!g.will_attend_restaurant ? 'Не идёт в ресторан' : ''}
+                        style={{width:'20px', height:'20px', cursor: g.will_attend_restaurant ? 'pointer' : 'not-allowed'}}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Итоги */}
+          {paymentsSummary && (
+            <div style={{marginTop:'1.5rem', display:'flex', gap:'0.8rem', flexWrap:'wrap'}}>
+              <div style={{flex:'1 1 280px', background:'var(--white)', border:'1px solid var(--border)', borderRadius:'10px', padding:'1rem 1.3rem'}}>
+                <div style={{fontSize:'0.78rem', letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--text-muted)', fontWeight:700, marginBottom:'0.4rem'}}>Фотограф собрано</div>
+                <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.3rem', color:'var(--navy)'}}>
+                  {new Intl.NumberFormat('ru-RU').format(paymentsSummary.photographer.total_collected)} ₽
+                  <span style={{color:'var(--text-muted)', fontFamily:'Raleway,sans-serif', fontSize:'0.95rem', fontWeight:400}}>
+                    {' '}из {new Intl.NumberFormat('ru-RU').format(paymentsSummary.photographer.total_expected)} ₽
+                  </span>
+                </div>
+                <div style={{fontSize:'0.85rem', color:'var(--text-muted)', marginTop:'0.2rem'}}>
+                  {paymentsSummary.photographer.paid_count} оплатили · {paymentsSummary.photographer.unpaid_count} ждём
+                </div>
+              </div>
+              <div style={{flex:'1 1 280px', background:'var(--white)', border:'1px solid var(--border)', borderRadius:'10px', padding:'1rem 1.3rem'}}>
+                <div style={{fontSize:'0.78rem', letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--text-muted)', fontWeight:700, marginBottom:'0.4rem'}}>Ресторан собрано</div>
+                {paymentsSummary.restaurant.per_person != null ? (
+                  <>
+                    <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.3rem', color:'var(--navy)'}}>
+                      {new Intl.NumberFormat('ru-RU').format(paymentsSummary.restaurant.total_collected)} ₽
+                      <span style={{color:'var(--text-muted)', fontFamily:'Raleway,sans-serif', fontSize:'0.95rem', fontWeight:400}}>
+                        {' '}из {new Intl.NumberFormat('ru-RU').format(paymentsSummary.restaurant.total_expected)} ₽
+                      </span>
+                    </div>
+                    <div style={{fontSize:'0.85rem', color:'var(--text-muted)', marginTop:'0.2rem'}}>
+                      {paymentsSummary.restaurant.paid_count} оплатили · {paymentsSummary.restaurant.unpaid_count} ждём · {new Intl.NumberFormat('ru-RU').format(paymentsSummary.restaurant.per_person)} ₽ с человека
+                    </div>
+                  </>
+                ) : (
+                  <div style={{fontSize:'0.95rem', color:'var(--text-muted)', fontStyle:'italic'}}>
+                    Сумма депозита не задана
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Photo emails */}

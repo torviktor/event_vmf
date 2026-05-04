@@ -19,6 +19,8 @@ class Guest(Base):
     dietary_notes = Column(Text, nullable=True)           # Пищевые ограничения
     message = Column(Text, nullable=True)                 # Пожелания / вопросы
     is_confirmed = Column(Boolean, default=False)         # Подтверждён оргкомитетом
+    paid_photographer = Column(Boolean, default=False, nullable=False)   # Оплатил фотографа
+    paid_restaurant = Column(Boolean, default=False, nullable=False)     # Оплатил ресторан
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

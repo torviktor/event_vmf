@@ -23,6 +23,9 @@ export const api = {
   getStats: () => req('GET', '/guests/stats'),
   confirmGuest: (id) => req('PATCH', `/guests/${id}/confirm`),
   deleteGuest: (id) => req('DELETE', `/guests/${id}`),
+  setPayment: (id, category, paid) => req('PATCH', `/guests/${id}/payment`, { category, paid }),
+  getPaymentsSummary: () => req('GET', '/guests/payments-summary'),
+  getPublicGuests: () => req('GET', '/guests/public'),
 
   // Auth
   login: (password) => req('POST', '/auth/login', { password }),

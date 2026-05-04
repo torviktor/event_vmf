@@ -1,16 +1,40 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
 
+function formatRub(n) {
+  if (n == null || isNaN(n)) return '—'
+  return new Intl.NumberFormat('ru-RU').format(Math.round(n)) + ' ₽'
+}
+
+function PaidMark({ paid, dim }) {
+  if (dim) {
+    return <span style={{color:'var(--text-muted)', fontSize:'1.1rem'}}>—</span>
+  }
+  return paid
+    ? <span style={{color:'#1e8449', fontWeight:700, fontSize:'1.15rem'}} title="Оплачено">✓</span>
+    : <span style={{color:'var(--text-muted)', fontSize:'1.1rem'}} title="Не оплачено">—</span>
+}
+
 export default function Guests() {
-  const [guests, setGuests] = useState([])
+  const [rows, setRows] = useState([])
+  const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api.getStats().then(() => {}).catch(() => {})
-    // Публичный список — только подтверждённые
-    fetch('/api/guests/public').then(r => r.json()).then(setGuests).catch(() => setGuests([]))
-    setLoading(false)
+    Promise.all([
+      api.getPublicGuests().catch(() => []),
+      api.getPaymentsSummary().catch(() => null),
+    ]).then(([list, sum]) => {
+      setRows(Array.isArray(list) ? list : [])
+      setSummary(sum)
+      setLoading(false)
+    })
   }, [])
+
+  const photo = summary?.photographer
+  const rest = summary?.restaurant
+  const kidsRule = rest?.kids_rule || 'free'
+  const restDepositKnown = rest?.per_person != null
 
   return (
     <div className="section">
@@ -19,41 +43,94 @@ export default function Guests() {
 
       {loading && <div className="spinner" />}
 
-      {!loading && guests.length === 0 && (
-        <div style={{textAlign:'center', padding:'3rem', color:'var(--text-muted)', fontSize:'1.05rem'}}>
-          Список участников пока формируется.<br/>
-          <a href="/register" style={{color:'var(--gold)', fontWeight:700, marginTop:'0.8rem', display:'inline-block'}}>Зарегистрируйтесь первым →</a>
-        </div>
-      )}
+      {!loading && (
+        <>
+          {/* Плашки-счётчики оплат */}
+          {summary && (
+            <div style={{display:'flex', gap:'0.8rem', marginBottom:'1.5rem', flexWrap:'wrap'}}>
+              <div style={{flex:'1 1 280px', background:'var(--white)', border:'1px solid var(--border)', borderRadius:'10px', padding:'1rem 1.3rem', boxShadow:'var(--shadow)'}}>
+                <div style={{fontSize:'0.78rem', letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--text-muted)', fontWeight:700, marginBottom:'0.4rem'}}>Фотограф</div>
+                <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.25rem', color:'var(--navy)'}}>
+                  {photo?.paid_count ?? 0}/{(photo?.paid_count ?? 0) + (photo?.unpaid_count ?? 0)} оплатили
+                </div>
+                <div style={{fontSize:'0.92rem', color:'var(--text-muted)', marginTop:'0.25rem'}}>
+                  {formatRub(photo?.total_collected)} из {formatRub(photo?.total_expected)}
+                </div>
+              </div>
 
-      {guests.length > 0 && (
-        <div style={{background:'var(--white)', border:'1px solid var(--border)', borderRadius:'12px', overflow:'hidden', boxShadow:'var(--shadow)'}}>
-          {guests.map((name, i) => (
-            <div key={i} style={{
-              padding:'1rem 1.5rem',
-              borderBottom: i < guests.length - 1 ? '1px solid var(--cream-dark)' : 'none',
-              display:'flex',
-              alignItems:'center',
-              gap:'1rem',
-              transition:'background 0.15s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background='var(--cream)'}
-            onMouseLeave={e => e.currentTarget.style.background='transparent'}
-            >
-              <span style={{
-                width:'32px', height:'32px', background:'var(--navy)', color:'var(--gold)',
-                borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center',
-                fontFamily:'Playfair Display,serif', fontWeight:700, fontSize:'0.9rem', flexShrink:0
-              }}>{i + 1}</span>
-              <span style={{fontSize:'1.05rem', fontWeight:600}}>{name}</span>
+              <div style={{flex:'1 1 280px', background:'var(--white)', border:'1px solid var(--border)', borderRadius:'10px', padding:'1rem 1.3rem', boxShadow:'var(--shadow)'}}>
+                <div style={{fontSize:'0.78rem', letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--text-muted)', fontWeight:700, marginBottom:'0.4rem'}}>Ресторан</div>
+                {restDepositKnown ? (
+                  <>
+                    <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.25rem', color:'var(--navy)'}}>
+                      {rest.paid_count}/{rest.paid_count + rest.unpaid_count} оплатили
+                    </div>
+                    <div style={{fontSize:'0.92rem', color:'var(--text-muted)', marginTop:'0.25rem'}}>
+                      {formatRub(rest.total_collected)} из {formatRub(rest.total_expected)} · {formatRub(rest.per_person)} с человека
+                    </div>
+                  </>
+                ) : (
+                  <div style={{fontSize:'0.95rem', color:'var(--text-muted)', fontStyle:'italic'}}>
+                    Ожидает уточнения суммы
+                  </div>
+                )}
+              </div>
             </div>
-          ))}
-        </div>
-      )}
+          )}
 
-      <div style={{marginTop:'1.5rem', textAlign:'center'}}>
-        <a href="/register"><button className="btn btn-primary">Зарегистрироваться</button></a>
-      </div>
+          {rows.length === 0 && (
+            <div style={{textAlign:'center', padding:'3rem', color:'var(--text-muted)', fontSize:'1.05rem'}}>
+              Список участников пока формируется.<br/>
+              <a href="/register" style={{color:'var(--gold)', fontWeight:700, marginTop:'0.8rem', display:'inline-block'}}>Зарегистрируйтесь первым →</a>
+            </div>
+          )}
+
+          {rows.length > 0 && (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style={{width:'48px'}}>#</th>
+                    <th>ФИО</th>
+                    <th style={{width:'90px', textAlign:'center'}}>Фото</th>
+                    <th style={{width:'110px', textAlign:'center'}}>Ресторан</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r, i) => {
+                    const restDim = r.is_child && kidsRule === 'free'
+                    return (
+                      <tr key={i}>
+                        <td style={{color:'var(--text-muted)'}}>{i + 1}</td>
+                        <td>
+                          <strong style={{color: r.is_child ? 'var(--text-muted)' : 'inherit', fontWeight: r.is_child ? 500 : 700}}>
+                            {r.name}
+                          </strong>
+                          {r.is_child && (
+                            <span style={{marginLeft:'0.5rem', fontSize:'0.82rem', color:'var(--text-muted)', fontStyle:'italic'}}>
+                              (ребёнок)
+                            </span>
+                          )}
+                        </td>
+                        <td style={{textAlign:'center'}}>
+                          <PaidMark paid={r.paid_photographer} dim={r.is_child} />
+                        </td>
+                        <td style={{textAlign:'center'}}>
+                          <PaidMark paid={r.paid_restaurant} dim={restDim} />
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div style={{marginTop:'1.5rem', textAlign:'center'}}>
+            <a href="/register"><button className="btn btn-primary">Зарегистрироваться</button></a>
+          </div>
+        </>
+      )}
     </div>
   )
 }

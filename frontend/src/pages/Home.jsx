@@ -65,13 +65,45 @@ function Countdown() {
 }
 
 
+function formatRub(n) {
+  if (n == null || isNaN(n)) return '—'
+  return new Intl.NumberFormat('ru-RU').format(Math.round(n)) + ' ₽'
+}
+
+function PaymentBar({ label, collected, expected, fallback }) {
+  const known = expected != null && expected > 0
+  const pct = known ? Math.min(100, Math.round((collected / expected) * 100)) : 0
+  return (
+    <div style={{flex:'1 1 280px', background:'var(--white)', border:'1px solid var(--border)', borderRadius:'10px', padding:'1rem 1.3rem', boxShadow:'var(--shadow)'}}>
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:'0.5rem'}}>
+        <span style={{fontSize:'0.78rem', letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--text-muted)', fontWeight:700}}>{label}</span>
+        {known && <span style={{fontSize:'0.85rem', color:'var(--text-muted)'}}>{pct}%</span>}
+      </div>
+      {known ? (
+        <>
+          <div style={{height:'8px', background:'var(--cream-dark)', borderRadius:'4px', overflow:'hidden', marginBottom:'0.5rem'}}>
+            <div style={{height:'100%', width:`${pct}%`, background:'var(--gold)', transition:'width 0.3s'}} />
+          </div>
+          <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.05rem', color:'var(--navy)'}}>
+            {formatRub(collected)} <span style={{color:'var(--text-muted)', fontFamily:'Raleway,sans-serif', fontSize:'0.92rem'}}>/ {formatRub(expected)}</span>
+          </div>
+        </>
+      ) : (
+        <div style={{fontSize:'0.95rem', color:'var(--text-muted)', fontStyle:'italic', padding:'0.4rem 0'}}>{fallback}</div>
+      )}
+    </div>
+  )
+}
+
 export default function Home() {
   const [stats, setStats] = useState(null)
   const [info, setInfo] = useState({})
+  const [payments, setPayments] = useState(null)
 
   useEffect(() => {
     api.getStats().then(setStats).catch(() => {})
     api.getInfo().then(setInfo).catch(() => {})
+    api.getPaymentsSummary().then(setPayments).catch(() => {})
   }, [])
 
   return (
@@ -112,6 +144,25 @@ export default function Home() {
             <span className="stat-label">Детей</span>
           </div>
           <div className="stat-item">
+          </div>
+        </div>
+      )}
+
+      {payments && (
+        <div className="section" style={{paddingTop:'1.2rem', paddingBottom:'0.5rem'}}>
+          <div style={{display:'flex', gap:'0.8rem', flexWrap:'wrap'}}>
+            <PaymentBar
+              label="Фотограф"
+              collected={payments.photographer?.total_collected}
+              expected={payments.photographer?.total_expected}
+              fallback="Нет данных"
+            />
+            <PaymentBar
+              label="Ресторан"
+              collected={payments.restaurant?.total_collected}
+              expected={payments.restaurant?.total_expected}
+              fallback="Ожидает уточнения суммы"
+            />
           </div>
         </div>
       )}

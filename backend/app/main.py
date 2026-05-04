@@ -37,6 +37,11 @@ def seed_default_info():
         "organizer_phone": "",
         "organizer_name": "Веревкин Виктор",
         "welcome_text": "Уважаемые выпускники, сослуживцы! Приглашаем вас на встречу выпускников ВМИРЭ им. А.С. Попова 2011 года.",
+        # Оплаты:
+        "photographer_total":     "24000",   # фикс: общая сумма за фотографа
+        "photographer_per_adult": "1500",    # фикс: 24000 / 16
+        "restaurant_deposit":     "",        # заполняет админ
+        "restaurant_kids_rule":   "free",    # free | half | full
     }
     for key, value in defaults.items():
         exists = db.query(EventInfo).filter(EventInfo.key == key).first()
