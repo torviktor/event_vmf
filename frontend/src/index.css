@@ -130,6 +130,8 @@ nav {
 .btn-gold { background: var(--gold); color: var(--navy); }
 .btn-gold:hover { background: var(--gold-light); transform: translateY(-1px); }
 .btn-gold:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.payment-qr { width: 200px; height: 200px; }
+@media (max-width: 640px) { .payment-qr { width: 150px; height: 150px; } }
 .btn-sm { padding: 0.5rem 1.1rem; font-size: 0.82rem; }
 .btn-outline { background: transparent; color: var(--navy); border: 2px solid var(--navy); }
 .btn-outline:hover { background: var(--navy); color: var(--white); }

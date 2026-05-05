@@ -21,6 +21,8 @@ services:
       DATABASE_URL: postgresql://reunion:${DB_PASSWORD:-reunion_secret_2025}@reunion-db:5432/reunion
       SECRET_KEY: ${SECRET_KEY:-change_me_in_production}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+    volumes:
+      - ./uploads:/app/uploads
     depends_on:
       - reunion-db
     restart: unless-stopped

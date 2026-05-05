@@ -46,6 +46,16 @@ export default function Admin() {
   const [spouseEdits, setSpouseEdits] = useState({})    // { [id]: "имя" }
   const [spouseSavingId, setSpouseSavingId] = useState(null)
 
+  // Payment requisites (info-keys + QR)
+  const [paymentInfo, setPaymentInfo] = useState(null)
+  const [reqsEdits, setReqsEdits] = useState({})
+  const [reqsSaving, setReqsSaving] = useState(false)
+  const [reqsMsg, setReqsMsg] = useState('')
+  const [qrFile, setQrFile] = useState(null)
+  const [qrUploading, setQrUploading] = useState(false)
+  const [qrMsg, setQrMsg] = useState('')
+  const [qrCacheBust, setQrCacheBust] = useState(0)
+
   async function login() {
     try {
       const res = await api.login(password)
@@ -83,7 +93,21 @@ export default function Admin() {
     try { setPaymentsSummary(await api.getPaymentsSummary()) } catch {}
   }
 
-  useEffect(() => { if (token) { loadGuests(); loadInfo(); loadPaymentsSummary() } }, [token])
+  async function loadPaymentInfo() {
+    try {
+      const p = await api.getPaymentInfo()
+      setPaymentInfo(p)
+      setReqsEdits({
+        recipient_name:  p.recipient_name  || '',
+        recipient_phone: p.recipient_phone || '',
+        recipient_bank:  p.recipient_bank  || '',
+        amount_label:    p.amount_label    || '',
+        comment:         p.comment         || '',
+      })
+    } catch {}
+  }
+
+  useEffect(() => { if (token) { loadGuests(); loadInfo(); loadPaymentsSummary(); loadPaymentInfo() } }, [token])
 
   async function togglePayment(guestId, category, currentPaid) {
     const next = !currentPaid
@@ -117,6 +141,35 @@ export default function Admin() {
       alert('Не удалось сохранить имя супруга/супруги: ' + (e.message || ''))
     }
     setSpouseSavingId(null)
+  }
+
+  async function saveReqs() {
+    setReqsSaving(true); setReqsMsg('')
+    try {
+      await api.updatePaymentInfo(reqsEdits)
+      await loadPaymentInfo()
+      setReqsMsg('✓ Сохранено')
+      setTimeout(() => setReqsMsg(''), 2000)
+    } catch (e) {
+      setReqsMsg('Ошибка: ' + (e.message || ''))
+    }
+    setReqsSaving(false)
+  }
+
+  async function uploadQr() {
+    if (!qrFile) return
+    setQrUploading(true); setQrMsg('')
+    try {
+      await api.uploadPaymentQr(qrFile)
+      await loadPaymentInfo()
+      setQrFile(null)
+      setQrCacheBust(Date.now())
+      setQrMsg('✓ Загружено')
+      setTimeout(() => setQrMsg(''), 2000)
+    } catch (e) {
+      setQrMsg('Ошибка: ' + (e.message || ''))
+    }
+    setQrUploading(false)
   }
 
   async function savePaymentSettings() {
@@ -470,6 +523,76 @@ export default function Admin() {
               </div>
             </div>
           )}
+
+          {/* Реквизиты для перевода */}
+          <div style={{marginTop:'2rem'}}>
+            <h3 style={{fontFamily:'Playfair Display,serif', color:'var(--navy)', marginBottom:'1rem'}}>Реквизиты для перевода</h3>
+
+            <div className="form-wrap" style={{marginBottom:'1.5rem'}}>
+              <div className="form-grid">
+                {[
+                  ['recipient_name',  'Получатель'],
+                  ['recipient_bank',  'Банк'],
+                  ['recipient_phone', 'Телефон'],
+                  ['amount_label',    'Сумма'],
+                ].map(([k, label]) => (
+                  <div className="form-group" key={k}>
+                    <label>{label}</label>
+                    <input type="text"
+                      value={reqsEdits[k] ?? ''}
+                      onChange={e => setReqsEdits(prev => ({...prev, [k]: e.target.value}))} />
+                  </div>
+                ))}
+                <div className="form-group form-full">
+                  <label>Комментарий</label>
+                  <input type="text"
+                    value={reqsEdits.comment ?? ''}
+                    onChange={e => setReqsEdits(prev => ({...prev, comment: e.target.value}))} />
+                </div>
+              </div>
+              <div style={{marginTop:'1rem', display:'flex', alignItems:'center', gap:'1rem'}}>
+                <button className="btn btn-primary" onClick={saveReqs} disabled={reqsSaving}>
+                  {reqsSaving ? 'Сохранение...' : 'Сохранить'}
+                </button>
+                {reqsMsg && (
+                  <span style={{color: reqsMsg.startsWith('✓') ? '#155724' : '#721c24', fontWeight:600}}>{reqsMsg}</span>
+                )}
+              </div>
+            </div>
+
+            <div className="form-wrap">
+              <div style={{fontWeight:700, fontSize:'0.95rem', marginBottom:'0.8rem', color:'var(--navy)'}}>QR-код</div>
+              <div style={{display:'flex', gap:'1.5rem', flexWrap:'wrap', alignItems:'center'}}>
+                {paymentInfo?.qr_url ? (
+                  <img
+                    src={qrCacheBust ? `${paymentInfo.qr_url}?v=${qrCacheBust}` : paymentInfo.qr_url}
+                    alt="Текущий QR"
+                    style={{width:'140px', height:'140px', borderRadius:'6px', border:'1px solid var(--cream-dark)'}}
+                  />
+                ) : (
+                  <div style={{width:'140px', height:'140px', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--cream)', border:'1px dashed var(--cream-dark)', borderRadius:'6px', color:'var(--text-muted)', fontSize:'0.85rem', textAlign:'center', padding:'0 0.5rem'}}>
+                    QR ещё не загружен
+                  </div>
+                )}
+                <div style={{flex:'1 1 240px', display:'flex', flexDirection:'column', gap:'0.6rem'}}>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg"
+                    onChange={e => setQrFile(e.target.files?.[0] || null)}
+                  />
+                  <div style={{display:'flex', alignItems:'center', gap:'1rem'}}>
+                    <button className="btn btn-primary btn-sm" onClick={uploadQr} disabled={!qrFile || qrUploading}>
+                      {qrUploading ? 'Загрузка...' : 'Загрузить'}
+                    </button>
+                    {qrMsg && (
+                      <span style={{color: qrMsg.startsWith('✓') ? '#155724' : '#721c24', fontWeight:600, fontSize:'0.9rem'}}>{qrMsg}</span>
+                    )}
+                  </div>
+                  <div style={{fontSize:'0.8rem', color:'var(--text-muted)'}}>PNG или JPEG, до 2 МБ.</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

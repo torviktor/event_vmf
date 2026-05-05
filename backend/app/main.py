@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import engine, Base, SessionLocal, ADMIN_PASSWORD
@@ -5,6 +7,7 @@ from app.models.models import EventInfo
 from app.routes.guests import router as guests_router
 from app.routes.other import auth_router, vote_router, info_router
 from app.routes.export import router as export_router
+from app.routes.payment import public_router as payment_public_router, admin_router as payment_admin_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -22,6 +25,8 @@ app.include_router(auth_router)
 app.include_router(vote_router)
 app.include_router(info_router)
 app.include_router(export_router)
+app.include_router(payment_public_router)
+app.include_router(payment_admin_router)
 
 
 @app.on_event("startup")
@@ -41,6 +46,13 @@ def seed_default_info():
         "photographer_total":     "24000",   # фикс: общая сумма за фотографа (per_person вычисляется в /payments-summary)
         "restaurant_deposit":     "",        # заполняет админ
         "restaurant_kids_rule":   "free",    # free | half | full
+        # Реквизиты для перевода:
+        "payment_recipient_name":  "Виктор В.",
+        "payment_recipient_phone": "+7 925 365-35-97",
+        "payment_recipient_bank":  "Сбер",
+        "payment_qr_filename":     "",
+        "payment_amount_label":    "1 500 ₽ с человека",
+        "payment_comment":         "Фотограф ВМИРЭ",
     }
     for key, value in defaults.items():
         exists = db.query(EventInfo).filter(EventInfo.key == key).first()
@@ -48,6 +60,9 @@ def seed_default_info():
             db.add(EventInfo(key=key, value=value))
     db.commit()
     db.close()
+
+    # Директория для QR-картинок.
+    os.makedirs("/app/uploads/payment_qr", exist_ok=True)
 
 
 @app.get("/api/health")

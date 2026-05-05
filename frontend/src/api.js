@@ -39,4 +39,23 @@ export const api = {
   // Info
   getInfo: () => req('GET', '/info/'),
   setInfo: (key, value) => req('POST', '/info/', { key, value }),
+
+  // Payment requisites
+  getPaymentInfo: () => req('GET', '/payment/info'),
+  updatePaymentInfo: (data) => req('PATCH', '/admin/payment/info', data),
+  uploadPaymentQr: async (file) => {
+    const token = localStorage.getItem('admin_token')
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/admin/payment/qr', {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: fd,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || `Ошибка ${res.status}`)
+    }
+    return res.json()
+  },
 }
