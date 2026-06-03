@@ -2,14 +2,11 @@ import { useState, useEffect } from 'react'
 import { api } from '../api'
 
 const DEFAULT_CHECKLIST = [
-  { id: 1, title: 'Сайт-приглашение',                    responsible: 'Веревкин Виктор',  done: true  },
-  { id: 2, title: 'Проход в институт',                   responsible: 'Определяется',      done: false },
-  { id: 3, title: 'Сувениры для преподавателей',         responsible: 'Определяется',      done: false },
-  { id: 4, title: 'Подарки детям',                       responsible: 'Определяется',      done: false },
-  { id: 5, title: 'Ресторан',                            responsible: 'Определяется',      done: false },
-  { id: 6, title: 'Сбор контактов и RSVP',               responsible: 'Определяется',      done: false },
-  { id: 7, title: 'Бюджет и взносы',                     responsible: 'Определяется',      done: false },
-  { id: 8, title: 'Фотограф / видео',                    responsible: 'Определяется',      done: false },
+  { id: 1, title: 'Сайт-приглашение',                            responsible: 'Веревкин Виктор',     done: true  },
+  { id: 2, title: 'Ресторан (Алекс Хаус, Петергоф)',             responsible: 'Оргкомитет',          done: true  },
+  { id: 3, title: 'Финансы / приём взносов',                     responsible: 'Дук Денис',           done: true  },
+  { id: 4, title: 'Проход в институт + предоплата ресторану',    responsible: 'Попов Александр',     done: true  },
+  { id: 5, title: 'Подарки (картины на кафедры)',                responsible: 'Не назначен',         done: false },
 ]
 
 export default function Admin() {
@@ -37,10 +34,8 @@ export default function Admin() {
 
   // Payments
   const [paymentsSummary, setPaymentsSummary] = useState(null)
-  const [restaurantDepositInput, setRestaurantDepositInput] = useState('')
-  const [kidsRuleInput, setKidsRuleInput] = useState('free')
-  const [paymentSettingsSaving, setPaymentSettingsSaving] = useState(false)
-  const [paymentSettingsMsg, setPaymentSettingsMsg] = useState('')
+  const [amountEdits, setAmountEdits] = useState({})    // { [guestId]: "7000" }
+  const [amountSavingId, setAmountSavingId] = useState(null)
 
   // Spouse name editing (по ID гостя)
   const [spouseEdits, setSpouseEdits] = useState({})    // { [id]: "имя" }
@@ -81,8 +76,6 @@ export default function Admin() {
       const i = await api.getInfo()
       setInfo(i)
       setInfoEdits(i)
-      setRestaurantDepositInput(i.restaurant_deposit || '')
-      setKidsRuleInput(i.restaurant_kids_rule || 'free')
       if (i.checklist) {
         try { setChecklist(JSON.parse(i.checklist)) } catch {}
       }
@@ -109,22 +102,37 @@ export default function Admin() {
 
   useEffect(() => { if (token) { loadGuests(); loadInfo(); loadPaymentsSummary(); loadPaymentInfo() } }, [token])
 
-  async function togglePayment(guestId, category, currentPaid) {
+  async function togglePaid(guestId, currentPaid) {
     const next = !currentPaid
-    // оптимистично
-    setGuests(prev => prev.map(g => g.id === guestId
-      ? { ...g, [category === 'photographer' ? 'paid_photographer' : 'paid_restaurant']: next }
-      : g))
+    setGuests(prev => prev.map(g => g.id === guestId ? { ...g, paid_restaurant: next } : g))
     try {
-      await api.setPayment(guestId, category, next)
+      await api.setPayment(guestId, { paid: next })
       loadPaymentsSummary()
     } catch (e) {
-      // откат
-      setGuests(prev => prev.map(g => g.id === guestId
-        ? { ...g, [category === 'photographer' ? 'paid_photographer' : 'paid_restaurant']: currentPaid }
-        : g))
+      setGuests(prev => prev.map(g => g.id === guestId ? { ...g, paid_restaurant: currentPaid } : g))
       alert('Не удалось сохранить: ' + (e.message || 'ошибка'))
     }
+  }
+
+  async function saveAmount(guestId) {
+    const edited = amountEdits[guestId]
+    const dbValue = guests.find(g => g.id === guestId)?.paid_amount ?? 0
+    const raw = (edited !== undefined ? edited : String(dbValue)).trim()
+    const value = raw === '' ? 0 : parseInt(raw, 10)
+    if (isNaN(value) || value < 0) {
+      alert('Сумма должна быть неотрицательным числом')
+      return
+    }
+    setAmountSavingId(guestId)
+    try {
+      await api.setPayment(guestId, { amount: value })
+      setGuests(prev => prev.map(g => g.id === guestId ? { ...g, paid_amount: value } : g))
+      setAmountEdits(prev => { const next = { ...prev }; delete next[guestId]; return next })
+      loadPaymentsSummary()
+    } catch (e) {
+      alert('Не удалось сохранить сумму: ' + (e.message || ''))
+    }
+    setAmountSavingId(null)
   }
 
   async function saveSpouseName(guestId) {
@@ -170,21 +178,6 @@ export default function Admin() {
       setQrMsg('Ошибка: ' + (e.message || ''))
     }
     setQrUploading(false)
-  }
-
-  async function savePaymentSettings() {
-    setPaymentSettingsSaving(true); setPaymentSettingsMsg('')
-    try {
-      await api.setInfo('restaurant_deposit', restaurantDepositInput.trim())
-      await api.setInfo('restaurant_kids_rule', kidsRuleInput)
-      await loadInfo()
-      await loadPaymentsSummary()
-      setPaymentSettingsMsg('✓ Сохранено')
-      setTimeout(() => setPaymentSettingsMsg(''), 2000)
-    } catch (e) {
-      setPaymentSettingsMsg('Ошибка: ' + (e.message || ''))
-    }
-    setPaymentSettingsSaving(false)
   }
 
   async function toggleConfirm(id) { await api.confirmGuest(id); loadGuests() }
@@ -371,45 +364,23 @@ export default function Admin() {
       {tab === 'payments' && (
         <div>
           <p style={{color:'var(--text-muted)', marginBottom:'1.2rem'}}>
-            Учёт оплат по двум категориям: фотограф (фикс. 24&nbsp;000&nbsp;₽ всего, 1&nbsp;500&nbsp;₽ со взрослого) и ресторан (депозит задаёт админ).
+            Учёт основного взноса за встречу. Отмечайте факт оплаты и вписывайте фактическую сумму, внесённую каждым участником.
           </p>
 
-          {/* Настройки сумм */}
-          <div className="form-wrap" style={{marginBottom:'1.5rem'}}>
-            <div className="form-grid">
-              <div className="form-group">
-                <label>Сумма депозита ресторана, ₽</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="100"
-                  placeholder="Например, 80000"
-                  value={restaurantDepositInput}
-                  onChange={e => setRestaurantDepositInput(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label>Дети за ресторан</label>
-                <select value={kidsRuleInput} onChange={e => setKidsRuleInput(e.target.value)}>
-                  <option value="free">Бесплатно</option>
-                  <option value="half">Половина</option>
-                  <option value="full">Как взрослые</option>
-                </select>
+          {paymentsSummary && (
+            <div style={{marginBottom:'1.2rem', display:'flex', gap:'0.8rem', flexWrap:'wrap'}}>
+              <div style={{flex:'1 1 280px', background:'var(--white)', border:'1px solid var(--border)', borderRadius:'10px', padding:'1rem 1.3rem'}}>
+                <div style={{fontSize:'0.78rem', letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--text-muted)', fontWeight:700, marginBottom:'0.4rem'}}>Собрано</div>
+                <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.3rem', color:'var(--navy)'}}>
+                  {new Intl.NumberFormat('ru-RU').format(paymentsSummary.total_collected || 0)} ₽
+                </div>
+                <div style={{fontSize:'0.85rem', color:'var(--text-muted)', marginTop:'0.2rem'}}>
+                  {paymentsSummary.paid_count} оплатили · {paymentsSummary.unpaid_count} ждём · из {paymentsSummary.payers_count} подтверждённых
+                </div>
               </div>
             </div>
-            <div style={{marginTop:'1rem', display:'flex', alignItems:'center', gap:'1rem'}}>
-              <button className="btn btn-primary" onClick={savePaymentSettings} disabled={paymentSettingsSaving}>
-                {paymentSettingsSaving ? 'Сохранение...' : 'Сохранить'}
-              </button>
-              {paymentSettingsMsg && (
-                <span style={{color: paymentSettingsMsg.startsWith('✓') ? '#155724' : '#721c24', fontWeight:600}}>
-                  {paymentSettingsMsg}
-                </span>
-              )}
-            </div>
-          </div>
+          )}
 
-          {/* Таблица оплат */}
           <div className="table-wrap">
             <table>
               <thead>
@@ -417,112 +388,62 @@ export default function Admin() {
                   <th>#</th>
                   <th>ФИО</th>
                   <th>Дети</th>
-                  <th style={{textAlign:'center', width:'100px'}}>Фото</th>
-                  <th style={{textAlign:'center', width:'120px'}}>Ресторан</th>
+                  <th style={{textAlign:'center', width:'100px'}}>Оплачено</th>
+                  <th style={{textAlign:'center', width:'200px'}}>Сумма, ₽</th>
                 </tr>
               </thead>
               <tbody>
                 {guests.length === 0 && (
                   <tr><td colSpan="5" className="text-center" style={{color:'var(--text-muted)', padding:'2rem'}}>Заявок пока нет</td></tr>
                 )}
-                {guests.map((g, i) => {
-                  const rows = []
-                  rows.push(
-                    <tr key={`r-${g.id}`}>
-                      <td style={{color:'var(--text-muted)'}}>{i+1}</td>
-                      <td>
-                        <strong>{g.name}</strong>
-                        {!g.is_confirmed && (
-                          <div style={{fontSize:'0.78rem', color:'var(--text-muted)', fontStyle:'italic'}}>не подтверждён</div>
-                        )}
-                      </td>
-                      <td style={{fontSize:'0.85rem', color:'var(--text-muted)'}}>
-                        {(g.children && g.children.length) ? g.children.map((c,ci) => (
-                          <div key={ci}>{c.name||`Ребёнок ${ci+1}`}{c.age ? `, ${c.age} л.` : ''}</div>
-                        )) : '—'}
-                      </td>
-                      <td style={{textAlign:'center'}}>
+                {guests.map((g, i) => (
+                  <tr key={g.id}>
+                    <td style={{color:'var(--text-muted)'}}>{i+1}</td>
+                    <td>
+                      <strong>{g.name}</strong>
+                      {!g.is_confirmed && (
+                        <div style={{fontSize:'0.78rem', color:'var(--text-muted)', fontStyle:'italic'}}>не подтверждён</div>
+                      )}
+                    </td>
+                    <td style={{fontSize:'0.85rem', color:'var(--text-muted)'}}>
+                      {(g.children && g.children.length) ? g.children.map((c,ci) => (
+                        <div key={ci}>{c.name||`Ребёнок ${ci+1}`}{c.age ? `, ${c.age} л.` : ''}</div>
+                      )) : '—'}
+                    </td>
+                    <td style={{textAlign:'center'}}>
+                      <input
+                        type="checkbox"
+                        checked={!!g.paid_restaurant}
+                        onChange={() => togglePaid(g.id, !!g.paid_restaurant)}
+                        style={{width:'20px', height:'20px', cursor:'pointer'}}
+                      />
+                    </td>
+                    <td>
+                      <div style={{display:'flex', gap:'0.3rem', alignItems:'center', justifyContent:'center'}}>
                         <input
-                          type="checkbox"
-                          checked={!!g.paid_photographer}
-                          onChange={() => togglePayment(g.id, 'photographer', !!g.paid_photographer)}
-                          style={{width:'20px', height:'20px', cursor:'pointer'}}
+                          type="number"
+                          min="0"
+                          step="100"
+                          placeholder="0"
+                          value={amountEdits[g.id] !== undefined ? amountEdits[g.id] : (g.paid_amount ?? 0)}
+                          onChange={e => setAmountEdits(prev => ({...prev, [g.id]: e.target.value}))}
+                          style={{width:'110px', border:'1px solid var(--cream-dark)', borderRadius:'4px', padding:'0.3rem 0.5rem', fontFamily:'Raleway,sans-serif', fontSize:'0.85rem', background:'var(--cream)', outline:'none', textAlign:'right'}}
                         />
-                      </td>
-                      <td style={{textAlign:'center'}}>
-                        <input
-                          type="checkbox"
-                          checked={!!g.paid_restaurant}
-                          onChange={() => togglePayment(g.id, 'restaurant', !!g.paid_restaurant)}
-                          disabled={!g.will_attend_restaurant}
-                          title={!g.will_attend_restaurant ? 'Не идёт в ресторан' : ''}
-                          style={{width:'20px', height:'20px', cursor: g.will_attend_restaurant ? 'pointer' : 'not-allowed'}}
-                        />
-                      </td>
-                    </tr>
-                  )
-                  if ((g.adults_count || 0) >= 2) {
-                    const spouseLabel = (g.spouse_name && g.spouse_name.trim()) || 'Супруга'
-                    rows.push(
-                      <tr key={`s-${g.id}`} style={{background:'rgba(0,0,0,0.015)'}}>
-                        <td></td>
-                        <td style={{paddingLeft:'1.6rem'}}>
-                          <span style={{color:'var(--text-muted)', fontStyle:'italic'}}>{spouseLabel}</span>
-                          <span style={{marginLeft:'0.5rem', fontSize:'0.78rem', color:'var(--text-muted)'}}>(супруга)</span>
-                        </td>
-                        <td></td>
-                        <td style={{textAlign:'center', color: g.paid_photographer ? '#1e8449' : 'var(--text-muted)', fontWeight: g.paid_photographer ? 700 : 400}}>
-                          {g.paid_photographer ? '✓' : '—'}
-                        </td>
-                        <td style={{textAlign:'center', color: (g.paid_restaurant && g.will_attend_restaurant) ? '#1e8449' : 'var(--text-muted)', fontWeight: (g.paid_restaurant && g.will_attend_restaurant) ? 700 : 400}}>
-                          {g.will_attend_restaurant ? (g.paid_restaurant ? '✓' : '—') : '—'}
-                        </td>
-                      </tr>
-                    )
-                  }
-                  return rows
-                })}
+                        <button
+                          className="btn btn-sm btn-gold"
+                          style={{padding:'0.25rem 0.6rem', fontSize:'0.72rem'}}
+                          disabled={amountSavingId === g.id}
+                          onClick={() => saveAmount(g.id)}
+                        >
+                          {amountSavingId === g.id ? '...' : 'OK'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-
-          {/* Итоги */}
-          {paymentsSummary && (
-            <div style={{marginTop:'1.5rem', display:'flex', gap:'0.8rem', flexWrap:'wrap'}}>
-              <div style={{flex:'1 1 280px', background:'var(--white)', border:'1px solid var(--border)', borderRadius:'10px', padding:'1rem 1.3rem'}}>
-                <div style={{fontSize:'0.78rem', letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--text-muted)', fontWeight:700, marginBottom:'0.4rem'}}>Фотограф собрано</div>
-                <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.3rem', color:'var(--navy)'}}>
-                  {new Intl.NumberFormat('ru-RU').format(paymentsSummary.photographer.total_collected)} ₽
-                  <span style={{color:'var(--text-muted)', fontFamily:'Raleway,sans-serif', fontSize:'0.95rem', fontWeight:400}}>
-                    {' '}из {new Intl.NumberFormat('ru-RU').format(paymentsSummary.photographer.total_expected)} ₽
-                  </span>
-                </div>
-                <div style={{fontSize:'0.85rem', color:'var(--text-muted)', marginTop:'0.2rem'}}>
-                  {paymentsSummary.photographer.paid_count} оплатили · {paymentsSummary.photographer.unpaid_count} ждём
-                </div>
-              </div>
-              <div style={{flex:'1 1 280px', background:'var(--white)', border:'1px solid var(--border)', borderRadius:'10px', padding:'1rem 1.3rem'}}>
-                <div style={{fontSize:'0.78rem', letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--text-muted)', fontWeight:700, marginBottom:'0.4rem'}}>Ресторан собрано</div>
-                {paymentsSummary.restaurant.per_person != null ? (
-                  <>
-                    <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.3rem', color:'var(--navy)'}}>
-                      {new Intl.NumberFormat('ru-RU').format(paymentsSummary.restaurant.total_collected)} ₽
-                      <span style={{color:'var(--text-muted)', fontFamily:'Raleway,sans-serif', fontSize:'0.95rem', fontWeight:400}}>
-                        {' '}из {new Intl.NumberFormat('ru-RU').format(paymentsSummary.restaurant.total_expected)} ₽
-                      </span>
-                    </div>
-                    <div style={{fontSize:'0.85rem', color:'var(--text-muted)', marginTop:'0.2rem'}}>
-                      {paymentsSummary.restaurant.paid_count} оплатили · {paymentsSummary.restaurant.unpaid_count} ждём · {new Intl.NumberFormat('ru-RU').format(paymentsSummary.restaurant.per_person)} ₽ с человека
-                    </div>
-                  </>
-                ) : (
-                  <div style={{fontSize:'0.95rem', color:'var(--text-muted)', fontStyle:'italic'}}>
-                    Сумма депозита не задана
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Реквизиты для перевода */}
           <div style={{marginTop:'2rem'}}>

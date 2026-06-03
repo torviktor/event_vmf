@@ -3,14 +3,11 @@ import { Link } from 'react-router-dom'
 import { api } from '../api'
 
 const DEFAULT_CHECKLIST = [
-  { id: 1, title: 'Сайт-приглашение',            responsible: 'Веревкин Виктор', done: true  },
-  { id: 2, title: 'Проход в институт',            responsible: 'Определяется',    done: false },
-  { id: 3, title: 'Сувениры для преподавателей',  responsible: 'Определяется',    done: false },
-  { id: 4, title: 'Подарки детям',                responsible: 'Определяется',    done: false },
-  { id: 5, title: 'Ресторан',                     responsible: 'Определяется',    done: false },
-  { id: 6, title: 'Сбор контактов и RSVP',        responsible: 'Определяется',    done: false },
-  { id: 7, title: 'Бюджет и взносы',              responsible: 'Определяется',    done: false },
-  { id: 8, title: 'Фотограф / видео',             responsible: 'Определяется',    done: false },
+  { id: 1, title: 'Сайт-приглашение',                            responsible: 'Веревкин Виктор',     done: true  },
+  { id: 2, title: 'Ресторан (Алекс Хаус, Петергоф)',             responsible: 'Оргкомитет',          done: true  },
+  { id: 3, title: 'Финансы / приём взносов',                     responsible: 'Дук Денис',           done: true  },
+  { id: 4, title: 'Проход в институт + предоплата ресторану',    responsible: 'Попов Александр',     done: true  },
+  { id: 5, title: 'Подарки (картины на кафедры)',                responsible: 'Не назначен',         done: false },
 ]
 
 export default function Checklist() {

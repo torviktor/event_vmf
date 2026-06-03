@@ -20,8 +20,9 @@ class Guest(Base):
     dietary_notes = Column(Text, nullable=True)           # Пищевые ограничения
     message = Column(Text, nullable=True)                 # Пожелания / вопросы
     is_confirmed = Column(Boolean, default=False)         # Подтверждён оргкомитетом
-    paid_photographer = Column(Boolean, default=False, nullable=False)   # Оплатил фотографа
-    paid_restaurant = Column(Boolean, default=False, nullable=False)     # Оплатил ресторан
+    paid_photographer = Column(Boolean, default=False, nullable=False)   # Устар.: оплата фотографа (поле сохранено для совместимости со старой БД, в UI не показывается)
+    paid_restaurant = Column(Boolean, default=False, nullable=False)     # Факт оплаты основного взноса за встречу
+    paid_amount = Column(Integer, default=0, nullable=False)             # Сумма основного взноса, ₽ (вносит Денис в админке)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
