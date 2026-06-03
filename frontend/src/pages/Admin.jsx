@@ -255,11 +255,8 @@ export default function Admin() {
     .filter(Boolean)
 
   const INFO_FIELDS = [
-    { key: 'institute_time',   label: 'Время в институте' },
-    { key: 'restaurant_time',  label: 'Время в ресторане' },
-    { key: 'restaurant_name',  label: 'Название ресторана' },
-    { key: 'budget_per_person',label: 'Бюджет на человека' },
-    { key: 'welcome_text',     label: 'Приветственный текст', textarea: true },
+    { key: 'budget_per_person', label: 'Бюджет на человека' },
+    { key: 'welcome_text',      label: 'Приветственный текст', textarea: true },
   ]
 
   if (!token) {
