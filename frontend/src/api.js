@@ -1,5 +1,13 @@
 const BASE = '/api'
 
+function handleAuthExpired() {
+  localStorage.removeItem('admin_token')
+  window.dispatchEvent(new CustomEvent('admin-auth-expired'))
+  const e = new Error('Сессия истекла, войдите заново')
+  e.code = 'auth_expired'
+  return e
+}
+
 async function req(method, path, body) {
   const token = localStorage.getItem('admin_token')
   const headers = { 'Content-Type': 'application/json' }
@@ -9,6 +17,9 @@ async function req(method, path, body) {
     headers,
     body: body ? JSON.stringify(body) : undefined
   })
+  if (res.status === 401 && token) {
+    throw handleAuthExpired()
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     throw new Error(err.detail || `Ошибка ${res.status}`)
@@ -57,6 +68,9 @@ export const api = {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: fd,
     })
+    if (res.status === 401 && token) {
+      throw handleAuthExpired()
+    }
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       throw new Error(err.detail || `Ошибка ${res.status}`)

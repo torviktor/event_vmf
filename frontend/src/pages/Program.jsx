@@ -112,11 +112,11 @@ export default function Program() {
         <div style={{display:'flex', gap:'3rem', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between'}}>
           <div>
             <div style={{fontSize:'0.75rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.3rem'}}>Ресторан</div>
-            <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.3rem'}}>{info.restaurant_name || 'Алекс Хаус, Петергоф'}</div>
+            <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.3rem'}}>Алекс Хаус, Петергоф</div>
           </div>
           <div>
             <div style={{fontSize:'0.75rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.3rem'}}>Основной взнос</div>
-            <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.3rem'}}>{info.budget_per_person || 'от 7 000 ₽'} / чел.</div>
+            <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.3rem'}}>от 7 000 ₽ / чел.</div>
           </div>
           <div>
             <div style={{fontSize:'0.75rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.3rem'}}>Вопросы</div>

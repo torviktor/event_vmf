@@ -140,27 +140,27 @@ export default function Home() {
       )}
 
       <div className="section">
-        <h2 className="section-title">Программа дня</h2>
-        <p className="section-sub">27 июня 2026 года, Санкт-Петербург</p>
+        <h2 className="section-title">Программа</h2>
+        <p className="section-sub">27–28 июня 2026 · Санкт-Петербург — Петергоф</p>
 
         <div className="program-grid">
           <div className="program-card">
             <span className="program-card-icon">▪</span>
-            <div className="program-card-time">{info.institute_time || '10:00 – 13:00'}</div>
+            <div className="program-card-time">10:00 – 14:00</div>
             <h3>Институт</h3>
-            <p>Экскурсия по корпусам, плацу и музею. Встреча с преподавателями и руководством кафедр. Семьи и дети приветствуются.</p>
+            <p>Выпуск курсантов, экскурсия по корпусам, плацу и музею, встреча с преподавателями. Можно с семьями.</p>
           </div>
           <div className="program-card">
             <span className="program-card-icon">▪</span>
-            <div className="program-card-time">День</div>
-            <h3>Прогулка</h3>
-            <p>Свободное время: набережная Невы, фонтаны, прогулка по городу. Для тех, кто хочет продолжить общение перед вечером.</p>
+            <div className="program-card-time">с 14:00</div>
+            <h3>Банкет</h3>
+            <p>Алекс Хаус, Петергоф. Обед, общение, вечерний банкет до 22:00.</p>
           </div>
           <div className="program-card">
             <span className="program-card-icon">▪</span>
-            <div className="program-card-time">{info.restaurant_time || '18:00 – 22:00'}</div>
-            <h3>{info.restaurant_name || 'Торжественный ужин'}</h3>
-            <p>Ужин с ведущим, тостами и общей фотографией. Для семей с детьми предусмотрен детский уголок в ресторане.</p>
+            <div className="program-card-time">28 июня</div>
+            <h3>Воскресенье</h3>
+            <p>Фонтаны Нижнего парка Петергофа и метеор. Неформально, далее разъезд.</p>
           </div>
         </div>
 
@@ -172,7 +172,8 @@ export default function Home() {
             </div>
             <div>
               <div style={{fontSize:'0.78rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.4rem'}}>Основной взнос</div>
-              <div style={{fontFamily:'Playfair Display, serif', fontSize:'1.6rem'}}>{info.budget_per_person || 'от 7 000 ₽'}</div>
+              <div style={{fontFamily:'Playfair Display, serif', fontSize:'1.6rem'}}>от 7 000 ₽</div>
+              <div style={{fontSize:'0.78rem', color:'rgba(255,255,255,0.55)', marginTop:'0.25rem'}}>еда + подарочный фонд; алкоголь и дети — отдельно</div>
             </div>
             <div style={{display:'flex', gap:'0.8rem', flexWrap:'wrap'}}>
               <Link to="/register"><button className="btn btn-gold">Записаться</button></Link>

@@ -13,6 +13,8 @@ export default function Admin() {
   const [token, setToken]         = useState(localStorage.getItem('admin_token') || '')
   const [password, setPassword]   = useState('')
   const [loginError, setLoginError] = useState('')
+  const [authExpired, setAuthExpired] = useState(false)   // показать «Сессия истекла» над формой логина
+  const [loadError, setLoadError] = useState('')          // ошибка загрузки данных, не связанная с auth
   const [tab, setTab]             = useState('guests')
 
   const [guests, setGuests]       = useState([])
@@ -57,17 +59,32 @@ export default function Admin() {
       localStorage.setItem('admin_token', res.token)
       setToken(res.token)
       setLoginError('')
+      setAuthExpired(false)    // успешный новый вход — плашка «Сессия истекла» уходит
+      setLoadError('')         // и общая ошибка загрузки тоже сбрасывается
+      setPassword('')
     } catch { setLoginError('Неверный пароль') }
   }
 
-  function logout() { localStorage.removeItem('admin_token'); setToken('') }
+  function logout() {
+    localStorage.removeItem('admin_token')
+    setToken('')
+    setAuthExpired(false)
+    setLoadError('')
+  }
+
+  function handleLoadError(e) {
+    // auth_expired обрабатывается отдельным listener'ом (он сбросит token и покажет форму) —
+    // здесь молчим, чтобы не было двойного сообщения.
+    if (e && e.code === 'auth_expired') return
+    setLoadError('Не удалось загрузить данные. Попробуйте обновить страницу или войти заново.')
+  }
 
   async function loadGuests() {
     setGuestsLoading(true)
     try {
       const [g, s] = await Promise.all([api.getGuests(), api.getStats()])
       setGuests(g); setStats(s)
-    } catch {}
+    } catch (e) { handleLoadError(e) }
     setGuestsLoading(false)
   }
 
@@ -79,11 +96,12 @@ export default function Admin() {
       if (i.checklist) {
         try { setChecklist(JSON.parse(i.checklist)) } catch {}
       }
-    } catch {}
+    } catch (e) { handleLoadError(e) }
   }
 
   async function loadPaymentsSummary() {
-    try { setPaymentsSummary(await api.getPaymentsSummary()) } catch {}
+    try { setPaymentsSummary(await api.getPaymentsSummary()) }
+    catch (e) { handleLoadError(e) }
   }
 
   async function loadPaymentInfo() {
@@ -97,10 +115,21 @@ export default function Admin() {
         amount_label:    p.amount_label    || '',
         comment:         p.comment         || '',
       })
-    } catch {}
+    } catch (e) { handleLoadError(e) }
   }
 
   useEffect(() => { if (token) { loadGuests(); loadInfo(); loadPaymentsSummary(); loadPaymentInfo() } }, [token])
+
+  // Слушаем событие из api.js при 401: мягко переключаем UI на форму логина с пометкой.
+  useEffect(() => {
+    const onExpired = () => {
+      setToken('')
+      setAuthExpired(true)
+      setLoadError('')   // не показываем загрузочную ошибку поверх «Сессия истекла»
+    }
+    window.addEventListener('admin-auth-expired', onExpired)
+    return () => window.removeEventListener('admin-auth-expired', onExpired)
+  }, [])
 
   async function togglePaid(guestId, currentPaid) {
     const next = !currentPaid
@@ -188,7 +217,13 @@ export default function Admin() {
 
   async function saveInfo(key) {
     setInfoSaving(key)
-    try { await api.setInfo(key, infoEdits[key] ?? info[key]); await loadInfo() } catch {}
+    try {
+      await api.setInfo(key, infoEdits[key] ?? info[key])
+      await loadInfo()
+    } catch (e) {
+      // При auth_expired listener уже переключит UI на форму логина — не дублируем сообщение.
+      if (e && e.code !== 'auth_expired') alert('Не удалось сохранить: ' + (e.message || 'ошибка'))
+    }
     setInfoSaving('')
   }
 
@@ -198,7 +233,9 @@ export default function Admin() {
       await api.setInfo('checklist', JSON.stringify(checklist))
       setChecklistMsg('✓ Сохранено')
       setTimeout(() => setChecklistMsg(''), 2000)
-    } catch { setChecklistMsg('Ошибка сохранения') }
+    } catch (e) {
+      if (e && e.code !== 'auth_expired') setChecklistMsg('Ошибка: ' + (e.message || 'не удалось сохранить'))
+    }
     setChecklistSaving(false)
   }
 
@@ -218,11 +255,7 @@ export default function Admin() {
     .filter(Boolean)
 
   const INFO_FIELDS = [
-    { key: 'institute_time',   label: 'Время в институте' },
-    { key: 'restaurant_time',  label: 'Время в ресторане' },
-    { key: 'restaurant_name',  label: 'Название ресторана' },
-    { key: 'budget_per_person',label: 'Бюджет на человека' },
-    { key: 'welcome_text',     label: 'Приветственный текст', textarea: true },
+    { key: 'welcome_text', label: 'Приветственный текст', textarea: true },
   ]
 
   if (!token) {
@@ -230,6 +263,11 @@ export default function Admin() {
       <div className="section" style={{maxWidth:'420px'}}>
         <h2 className="section-title">Панель организатора</h2>
         <div className="form-wrap">
+          {authExpired && (
+            <div className="alert alert-warning" style={{background:'rgba(201,168,76,0.15)', border:'1px solid var(--gold)', color:'var(--navy)', padding:'0.7rem 1rem', borderRadius:'6px', marginBottom:'1rem'}}>
+              Сессия истекла. Войдите заново.
+            </div>
+          )}
           {loginError && <div className="alert alert-error">{loginError}</div>}
           <div className="form-group" style={{marginBottom:'1rem'}}>
             <label>Пароль администратора</label>
@@ -249,6 +287,15 @@ export default function Admin() {
         <h2 className="section-title" style={{marginBottom:0}}>Панель организатора</h2>
         <button className="btn btn-outline btn-sm" onClick={logout}>Выйти</button>
       </div>
+
+      {loadError && (
+        <div className="alert alert-error" style={{background:'rgba(176,68,68,0.1)', border:'1px solid #b04444', color:'#721c24', padding:'0.7rem 1rem', borderRadius:'6px', marginBottom:'1rem', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'1rem'}}>
+          <span>{loadError}</span>
+          <button className="btn btn-sm" style={{background:'transparent', border:'1px solid #b04444', color:'#721c24', padding:'0.3rem 0.8rem'}} onClick={() => { setLoadError(''); loadGuests(); loadInfo(); loadPaymentsSummary(); loadPaymentInfo() }}>
+            Повторить
+          </button>
+        </div>
+      )}
 
       {stats && (
         <div style={{display:'flex', gap:'0.8rem', marginBottom:'1.5rem', flexWrap:'wrap'}}>
@@ -300,7 +347,9 @@ export default function Admin() {
                 </thead>
                 <tbody>
                   {guests.length === 0 && (
-                    <tr><td colSpan="8" className="text-center" style={{color:'var(--text-muted)', padding:'2rem'}}>Заявок пока нет</td></tr>
+                    <tr><td colSpan="8" className="text-center" style={{color:'var(--text-muted)', padding:'2rem'}}>
+                      {loadError ? 'Не удалось загрузить участников. Войдите заново или нажмите «Повторить» выше.' : 'Заявок пока нет'}
+                    </td></tr>
                   )}
                   {guests.map((g, i) => (
                     <tr key={g.id}>
@@ -394,7 +443,9 @@ export default function Admin() {
               </thead>
               <tbody>
                 {guests.length === 0 && (
-                  <tr><td colSpan="5" className="text-center" style={{color:'var(--text-muted)', padding:'2rem'}}>Заявок пока нет</td></tr>
+                  <tr><td colSpan="5" className="text-center" style={{color:'var(--text-muted)', padding:'2rem'}}>
+                    {loadError ? 'Не удалось загрузить участников. Войдите заново или нажмите «Повторить» выше.' : 'Заявок пока нет'}
+                  </td></tr>
                 )}
                 {guests.map((g, i) => (
                   <tr key={g.id}>
