@@ -116,7 +116,7 @@ export default function Program() {
           </div>
           <div>
             <div style={{fontSize:'0.75rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.3rem'}}>Основной взнос</div>
-            <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.3rem'}}>{info.budget_per_person || 'от 7 000 ₽'} / чел.</div>
+            <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.3rem'}}>от 7 000 ₽ / чел.</div>
           </div>
           <div>
             <div style={{fontSize:'0.75rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.3rem'}}>Вопросы</div>

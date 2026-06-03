@@ -172,7 +172,8 @@ export default function Home() {
             </div>
             <div>
               <div style={{fontSize:'0.78rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.4rem'}}>Основной взнос</div>
-              <div style={{fontFamily:'Playfair Display, serif', fontSize:'1.6rem'}}>{info.budget_per_person || 'от 7 000 ₽'}</div>
+              <div style={{fontFamily:'Playfair Display, serif', fontSize:'1.6rem'}}>от 7 000 ₽</div>
+              <div style={{fontSize:'0.78rem', color:'rgba(255,255,255,0.55)', marginTop:'0.25rem'}}>еда + подарочный фонд; алкоголь и дети — отдельно</div>
             </div>
             <div style={{display:'flex', gap:'0.8rem', flexWrap:'wrap'}}>
               <Link to="/register"><button className="btn btn-gold">Записаться</button></Link>

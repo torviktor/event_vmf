@@ -255,8 +255,7 @@ export default function Admin() {
     .filter(Boolean)
 
   const INFO_FIELDS = [
-    { key: 'budget_per_person', label: 'Бюджет на человека' },
-    { key: 'welcome_text',      label: 'Приветственный текст', textarea: true },
+    { key: 'welcome_text', label: 'Приветственный текст', textarea: true },
   ]
 
   if (!token) {
