@@ -2,30 +2,25 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 
+// Поминутного расписания нет: время в институте плавающее, привязано к выпуску курсантов.
+// Поэтому пункты сформулированы ориентировочно, без фиктивных таймштампов.
 const SATURDAY = [
-  { time: '10:00', title: 'Сбор у института (ВВМИУ)',
-    desc: 'Главный вход. Паспорт обязателен — проход согласован заранее, списки переданы.' },
-  { time: '10:30', title: 'Выпуск курсантов, проход по списку',
-    desc: 'Торжественное построение, наблюдаем выпуск нового поколения.' },
-  { time: '11:30', title: 'Экскурсия по институту',
-    desc: 'Аудитории, плац, музей. Семьи приглашаются.' },
-  { time: '12:30', title: 'Встреча с преподавателями',
-    desc: 'Неформальное общение с руководством кафедр.' },
-  { time: '14:00', title: 'Сбор в ресторане «Алекс Хаус» (Петергоф)',
-    desc: 'Обед, общение, первые тосты. Банкет открыт с 14:00.' },
-  { time: '17:00', title: 'Пауза',
-    desc: 'Семьи с малышами могут увезти детей на сон, остальные отдыхают; зал работает.' },
-  { time: '18:30', title: 'Основная вечерняя часть банкета',
-    desc: 'Тосты, общая фотография, музыка, общение.' },
-  { time: '22:00', title: 'Завершение',
-    desc: 'До следующей встречи.' },
+  {
+    time: '~12:00',
+    title: 'Институт (ВВМИУ)',
+    desc: 'Сбор после выпуска курсантов — точное время зависит от выпуска (минимум до 12:00). Свободное перемещение по территории: плац, казарма, возложение цветов к мемориалу, музей. Встреча с преподавателями — по возможности, если получится по графику выпуска.',
+  },
+  {
+    time: '14:00 – 15:00',
+    title: 'Выход из института, переезд в Петергоф',
+    desc: 'Ориентировочное окно завершения институтской части и сбора у Алекс Хауса.',
+  },
+  {
+    time: 'с 15:00',
+    title: 'Банкет в «Алекс Хаус» (Петергоф)',
+    desc: 'Обед, общение, тосты, общая фотография. Ориентировочно до 22:00, уйти можно раньше.',
+  },
 ]
-
-const SUNDAY = {
-  date: '28 июня (воскресенье)',
-  title: 'Неформальная часть',
-  desc: 'Фонтаны Нижнего парка Петергофа, прогулка по парку, возвращение в Петербург на «Метеоре». Дальше — разъезд.',
-}
 
 const BUDGET_LINES = [
   { label: 'Еда (банкетное меню)', value: '4 500 ₽ со взрослого' },
@@ -42,19 +37,15 @@ export default function Program() {
   return (
     <div className="section">
       <h2 className="section-title">Программа встречи</h2>
-      <p className="section-sub">27–28 июня 2026 · Санкт-Петербург — Петергоф · ВМИРЭ им. А.С. Попова, выпуск 2011</p>
+      <p className="section-sub">27 июня 2026 · Санкт-Петербург — Петергоф · ВМИРЭ им. А.С. Попова, выпуск 2011</p>
 
-      <h3 style={{fontFamily:'Playfair Display,serif', color:'var(--navy)', marginTop:'2rem', marginBottom:'0.5rem'}}>
-        27 июня (суббота)
-      </h3>
-
-      <div style={{position:'relative', marginTop:'1rem'}}>
+      <div style={{position:'relative', marginTop:'1.5rem'}}>
         <div style={{position:'absolute', left:'28px', top:'8px', bottom:'8px', width:'2px', background:'linear-gradient(to bottom, var(--gold), var(--cream-dark))'}} />
         {SATURDAY.map((item, i) => (
           <div key={i} style={{display:'flex', gap:'1.8rem', marginBottom:'2.2rem', position:'relative'}}>
-            <div style={{width:'58px', height:'58px', flexShrink:0, background:'var(--navy)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 0 4px var(--cream)', position:'relative', zIndex:1}}>
-              <span style={{fontFamily:'Playfair Display,serif', fontWeight:700, color:'var(--gold)', fontSize:'0.75rem', letterSpacing:'0.05em'}}>
-                {item.time.split(':')[0]}<sup style={{fontSize:'0.55rem'}}>{item.time.split(':')[1]}</sup>
+            <div style={{minWidth:'58px', height:'58px', flexShrink:0, background:'var(--navy)', borderRadius:'29px', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 0 4px var(--cream)', position:'relative', zIndex:1, padding:'0 0.7rem'}}>
+              <span style={{fontFamily:'Playfair Display,serif', fontWeight:700, color:'var(--gold)', fontSize:'0.78rem', letterSpacing:'0.03em', whiteSpace:'nowrap'}}>
+                {item.time}
               </span>
             </div>
             <div style={{paddingTop:'0.6rem'}}>
@@ -65,12 +56,8 @@ export default function Program() {
         ))}
       </div>
 
-      <h3 style={{fontFamily:'Playfair Display,serif', color:'var(--navy)', marginTop:'2.5rem', marginBottom:'0.5rem'}}>
-        {SUNDAY.date}
-      </h3>
-      <div style={{background:'var(--white)', border:'1px solid var(--border)', borderRadius:'10px', padding:'1.5rem 1.8rem', boxShadow:'var(--shadow)', marginTop:'0.6rem'}}>
-        <div style={{fontFamily:'Playfair Display,serif', color:'var(--navy)', fontSize:'1.15rem', marginBottom:'0.4rem'}}>{SUNDAY.title}</div>
-        <p style={{color:'var(--text-muted)', fontSize:'0.97rem', margin:0}}>{SUNDAY.desc}</p>
+      <div style={{background:'rgba(201,168,76,0.08)', border:'1px solid var(--cream-dark)', borderRadius:'8px', padding:'1rem 1.3rem', marginTop:'0.5rem', fontSize:'0.92rem', color:'var(--text-muted)'}}>
+        <strong style={{color:'var(--navy)'}}>Точного поминутного расписания нет.</strong> Институтская часть привязана к выпуску курсантов — времена ориентировочные, могут сдвинуться. Банкет в Алекс Хаус начинается по факту сбора, ориентировочно с 15:00.
       </div>
 
       <h3 style={{fontFamily:'Playfair Display,serif', color:'var(--navy)', marginTop:'2.5rem', marginBottom:'0.5rem'}}>
@@ -104,7 +91,7 @@ export default function Program() {
         <div className="program-card">
           <span className="program-card-icon">▪</span>
           <h3>Резервный план</h3>
-          <p>В случае неблагоприятной погоды воскресная прогулочная часть переносится. Программа в институте и банкет проводятся в любом случае.</p>
+          <p>Программа в институте и банкет проводятся в любом случае. Времена могут сдвинуться по факту выпуска курсантов.</p>
         </div>
       </div>
 
@@ -116,7 +103,7 @@ export default function Program() {
           </div>
           <div>
             <div style={{fontSize:'0.75rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.3rem'}}>Основной взнос</div>
-            <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.3rem'}}>от 7 000 ₽ / чел.</div>
+            <div style={{fontFamily:'Playfair Display,serif', fontSize:'1.3rem'}}>от 4 500 ₽ / чел.</div>
           </div>
           <div>
             <div style={{fontSize:'0.75rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.3rem'}}>Вопросы</div>

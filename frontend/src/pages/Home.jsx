@@ -141,26 +141,20 @@ export default function Home() {
 
       <div className="section">
         <h2 className="section-title">Программа</h2>
-        <p className="section-sub">27–28 июня 2026 · Санкт-Петербург — Петергоф</p>
+        <p className="section-sub">27 июня 2026 · Санкт-Петербург — Петергоф</p>
 
         <div className="program-grid">
           <div className="program-card">
             <span className="program-card-icon">▪</span>
-            <div className="program-card-time">10:00 – 14:00</div>
-            <h3>Институт</h3>
-            <p>Выпуск курсантов, экскурсия по корпусам, плацу и музею, встреча с преподавателями. Можно с семьями.</p>
+            <div className="program-card-time">с ~12:00</div>
+            <h3>Институт (ВВМИУ)</h3>
+            <p>Сбор после выпуска курсантов — точное время зависит от выпуска. Плац, казарма, возложение цветов к мемориалу, музей. Можно с семьями.</p>
           </div>
           <div className="program-card">
             <span className="program-card-icon">▪</span>
-            <div className="program-card-time">с 14:00</div>
+            <div className="program-card-time">с 15:00</div>
             <h3>Банкет</h3>
-            <p>Алекс Хаус, Петергоф. Обед, общение, вечерний банкет до 22:00.</p>
-          </div>
-          <div className="program-card">
-            <span className="program-card-icon">▪</span>
-            <div className="program-card-time">28 июня</div>
-            <h3>Воскресенье</h3>
-            <p>Фонтаны Нижнего парка Петергофа и метеор. Неформально, далее разъезд.</p>
+            <p>Алекс Хаус, Петергоф. Обед, общение, банкет ориентировочно до 22:00.</p>
           </div>
         </div>
 
@@ -172,8 +166,8 @@ export default function Home() {
             </div>
             <div>
               <div style={{fontSize:'0.78rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.4rem'}}>Основной взнос</div>
-              <div style={{fontFamily:'Playfair Display, serif', fontSize:'1.6rem'}}>от 7 000 ₽</div>
-              <div style={{fontSize:'0.78rem', color:'rgba(255,255,255,0.55)', marginTop:'0.25rem'}}>еда + подарочный фонд; алкоголь и дети — отдельно</div>
+              <div style={{fontFamily:'Playfair Display, serif', fontSize:'1.6rem'}}>от 4 500 ₽</div>
+              <div style={{fontSize:'0.78rem', color:'rgba(255,255,255,0.55)', marginTop:'0.25rem'}}>еда; алкоголь и подарочный фонд — отдельно, по участнику</div>
             </div>
             <div style={{display:'flex', gap:'0.8rem', flexWrap:'wrap'}}>
               <Link to="/register"><button className="btn btn-gold">Записаться</button></Link>
