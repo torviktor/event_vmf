@@ -314,7 +314,7 @@ export default function Admin() {
       )}
 
       {/* Tabs */}
-      <div style={{display:'flex', gap:'0.5rem', marginBottom:'1.5rem', borderBottom:'2px solid var(--border)'}}>
+      <div style={{display:'flex', gap:'0.5rem', marginBottom:'1.5rem', borderBottom:'2px solid var(--border)', overflowX:'auto', WebkitOverflowScrolling:'touch'}}>
         {[
           ['guests',    'Участники'],
           ['payments',  'Оплаты'],
@@ -324,7 +324,7 @@ export default function Admin() {
           ['poll',      'Голосование'],
         ].map(([t, label]) => (
           <button key={t} className="btn btn-sm"
-            style={{background: tab===t ? 'var(--navy)' : 'transparent', color: tab===t ? 'var(--white)' : 'var(--text-muted)', border:'none', borderRadius:'6px 6px 0 0', paddingBottom:'0.75rem'}}
+            style={{background: tab===t ? 'var(--navy)' : 'transparent', color: tab===t ? 'var(--white)' : 'var(--text-muted)', border:'none', borderRadius:'6px 6px 0 0', paddingBottom:'0.75rem', flexShrink:0, whiteSpace:'nowrap'}}
             onClick={() => setTab(t)}>{label}
           </button>
         ))}
